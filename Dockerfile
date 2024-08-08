@@ -2,7 +2,7 @@
 FROM jlesage/baseimage-gui:debian-11-v4.6.3
 
 ENV VERSION 0.70.3
-ENV ARCHIVE https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz
+ENV ARCHIVE=https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz
 ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 	
 	
