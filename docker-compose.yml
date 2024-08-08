@@ -1,14 +1,16 @@
 version: "3"
 services:
   portfolio-performance:
-    image: quallenbezwinger/portfolio-performance:0.9
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: portfolio
     restart: unless-stopped
     ports:
       - 5800:5800
     volumes:
-      - /opt/docker-volumes/pp/config:/config
-      - /opt/docker-volumes/pp/workspace:/opt/portfolio/workspace
+      - ./config:/config
+      - ./workspace:/opt/portfolio/workspace
     environment:
       USER_ID: 1000
       GROUP_ID: 1000
