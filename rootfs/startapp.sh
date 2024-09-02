@@ -7,5 +7,16 @@ start_pp() {
     exec /opt/portfolio/PortfolioPerformance > /config/log/pp_out.log 2> /config/log/pp_err.log
 }
 
+start_ff() {
+    # Create a default Firefox profile
+    #mkdir -p /root/.mozilla/firefox
+    #firefox -CreateProfile "default /root/.mozilla/firefox/default"
+    # Start firefox-esr
+    firefox-esr &
+}
+
+# start firefox
+start_ff
+
 # start portfolio performance
 start_pp
