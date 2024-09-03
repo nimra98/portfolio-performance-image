@@ -25,20 +25,28 @@ RUN \
 	chmod -R 777 /opt/portfolio && \
     install_app_icon.sh "$APP_ICON_URL"
 
-# Copy the start script.
-COPY rootfs/ /
-
 # Set the name of the application.
 ENV APP_NAME="Portfolio Performance"
 
 RUN \
 apt-get update && apt-get install -y \
         xfce4 \
-        xfce4-terminal
+        xfce4-terminal \
+        tint2
 
 # RUN export DISPLAY=localhost:0.0
 RUN export DISPLAY=:0
 
+# Copy the start script.
+COPY rootfs/ /
+
 # Create a default Firefox profile
 RUN mkdir -p /root/.mozilla/firefox && \
-    firefox -CreateProfile "default /root/.mozilla/firefox/default" -headless
+    #chmod 777 /root/.mozilla/firefox && \
+    #firefox -CreateProfile "default /root/.mozilla/firefox/default" -headless \
+    chmod -R 777 /root/.mozilla/firefox
+
+# Set tint2 to show panel on the left side and vertically
+#RUN sed -i 's/panel_position = bottom/panel_position = left/g' /etc/xdg/tint2/tint2rc && \
+    #sed -i 's/panel_dock = 0/panel_dock = 1/g' /etc/xdg/tint2/tint2rc && \
+#    sed -i 's/panel_orientation = horizontal/panel_orientation = vertical/g' /etc/xdg/tint2/tint2rc

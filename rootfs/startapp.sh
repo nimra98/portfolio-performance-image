@@ -10,13 +10,16 @@ start_pp() {
 start_ff() {
     # Create a default Firefox profile
     #mkdir -p /root/.mozilla/firefox
-    #firefox -CreateProfile "default /root/.mozilla/firefox/default"
+    firefox -CreateProfile "default /root/.mozilla/firefox/default"
     # Start firefox-esr
     firefox-esr &
 }
 
 # start firefox
-start_ff
+#start_ff
+
+# Starten Sie ein Panel (z.B. tint2)
+tint2 &
 
 # start portfolio performance
 start_pp
