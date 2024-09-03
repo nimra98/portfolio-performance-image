@@ -7,19 +7,11 @@ start_pp() {
     exec /opt/portfolio/PortfolioPerformance > /config/log/pp_out.log 2> /config/log/pp_err.log
 }
 
-start_ff() {
-    # Create a default Firefox profile
-    #mkdir -p /root/.mozilla/firefox
-    firefox -CreateProfile "default /root/.mozilla/firefox/default"
-    # Start firefox-esr
-    firefox-esr &
-}
+# Starten tint2 panel with preconfigured config
+exec tint2 -c /usr/share/tint2/vertical-neutral-icons.tint2rc &
 
-# start firefox
-#start_ff
-
-# Starten Sie ein Panel (z.B. tint2)
-tint2 &
+# Set DBUS env DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1003/bus (https://unix.stackexchange.com/a/647236)
+export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --fork --config-file=/usr/share/dbus-1/session.conf --print-address`
 
 # start portfolio performance
 start_pp
