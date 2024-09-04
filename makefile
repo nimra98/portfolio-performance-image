@@ -9,12 +9,22 @@ ifndef VERSION
 $(error VERSION is not set)
 endif
 
+ifndef TARGETARCH
+$(error TARGETARCH is not set)
+endif
+
+ifndef PACKAGING
+$(error PACKAGING is not set)
+endif
+
 .PHONY: build # Build the container image
 build:
 	@docker buildx create --use --name=crossplat --node=crossplat && \
 	if [ "$(LATEST)" = "true" ]; then \
 		docker buildx build \
 		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		--build-arg PACKAGING=$(PACKAGING) \
 		--output "type=docker,push=false" \
 		--tag $(IMAGE):$(VERSION) \
 		--tag $(IMAGE):latest \
