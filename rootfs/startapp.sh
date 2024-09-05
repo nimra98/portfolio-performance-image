@@ -46,13 +46,13 @@ if command -v nextcloudcmd >/dev/null 2>&1; then
     /tmp/start_sync.sh
     autocheck_filesystem_inotify &
     # add cronjob to sync every 1 minute
-    #echo "*/1 * * * * /tmp/start_sync.sh" > /tmp/cronjob
-    #crontab /tmp/cronjob
-    #rm /tmp/cronjob
+    echo "*/1 * * * * /tmp/start_sync.sh" > /tmp/cronjob
+    crontab /tmp/cronjob
+    rm /tmp/cronjob
 fi
 
 # Set JAVA PATH variable for openjdk 17 jre
-export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+#export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 
 # start portfolio performance
 # change to workdpace dir, so that file open dialog in pp will show up mounted dir in left menu

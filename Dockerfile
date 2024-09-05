@@ -17,13 +17,13 @@ RUN apt-get update && apt-get install -y wget && \
     cd /opt && wget ${ARCHIVE} && tar xvzf PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz && \
     rm PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
 
-# Install dependencies.
-RUN \
-    apt-get install -y \
-    openjdk-17-jre \
-    libwebkit2gtk-4.1-0 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+## Install dependencies.
+#RUN \
+#    apt-get install -y \
+#    openjdk-17-jre \
+#    libwebkit2gtk-4.1-0 && \
+#    apt-get clean && \
+#    rm -rf /var/lib/apt/lists/*
 
 # If PACKAGING is set to firefox or firefox-nextcloud, install firefox-esr
 RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
@@ -72,6 +72,7 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
     fi
 
 # Nextcloud desktop client needs bugfixes for CLI, so we need to install it from testing
+# This is considered illegal (or at least against all best practices) and should be avoided, but there is no other way to get the newest version of the package without building it from source (AppImage requires FUSE)
 # https://github.com/nextcloud/desktop/issues/3144
 # https://github.com/nextcloud/desktop/pull/6773
 # https://packages.debian.org/trixie/nextcloud-desktop-cmd
@@ -84,10 +85,11 @@ RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ];
     echo "Package: *\nPin: release n=testing\nPin-Priority: -10" > /etc/apt/preferences.d/testing.pref && \
     echo "Package: nextcloud-desktop-cmd\nPin: release n=testing\nPin-Priority: 501" > /etc/apt/preferences.d/nextcloud.pref; \
     fi
-
 RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
     apt-get update && apt-get -t testing install -y \
-    nextcloud-desktop-cmd && \
+    nextcloud-desktop-cmd \
+    openjdk-17-jre \
+    libwebkit2gtk-4.1-0 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
