@@ -3,23 +3,19 @@ FROM jlesage/baseimage-gui:debian-12-v4
 
 # Target platform for the image (linux/amd64, linux/arm64)
 ARG TARGETARCH=amd64
-# Create list of architecture file names
-RUN case ${TARGETARCH} in \
-    amd64) ARCHITECTURE=linux.gtk.x86_64 ;; \
-    arm64) ARCHITECTURE=linux.gtk.aarch64 ;; \
-    *) echo "Unsupported architecture"; exit 1 ;; \
-    esac
+# Architecture labels of the application (linux.gtk.x86_64, linux.gtk.aarch64)
+ARG ARCHITECTURE=linux.gtk.x86_64
+
 # Can be packaged with firefox, nextcloud, firefox-nextcloud, or none
 ARG PACKAGING=none
 
 ARG VERSION=0.70.3
-ENV ARCHIVE=https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz
+ENV ARCHIVE=https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
 ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 
-
 RUN apt-get update && apt-get install -y wget && \
-    cd /opt && wget ${ARCHIVE} && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && \
-    rm PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz
+    cd /opt && wget ${ARCHIVE} && tar xvzf PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz && \
+    rm PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
 
 # Install dependencies.
 RUN \
@@ -34,12 +30,13 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
     apt-get update && apt-get install -y \
     firefox-esr \
     xfce4 \
-    xfce4-terminal \
     thunar \
     tint2 \
     gsimplecal \
     dbus \
-    dbus-x11 && \
+    dbus-x11 \
+    inotify-tools \
+    cron && \
     apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
@@ -68,17 +65,31 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
     # Add program items to taskbar
     echo "launcher_item_app = /usr/share/applications/xfce4-file-manager.desktop" >> /usr/share/tint2/vertical-neutral-icons.tint2rc && \
     echo "launcher_item_app = /usr/share/applications/firefox-esr.desktop" >> /usr/share/tint2/vertical-neutral-icons.tint2rc && \
-    echo "launcher_item_app = /usr/share/applications/xfce4-terminal.desktop" >> /usr/share/tint2/vertical-neutral-icons.tint2rc && \
+    #echo "launcher_item_app = /usr/share/applications/debian-uxterm.desktop" >> /usr/share/tint2/vertical-neutral-icons.tint2rc && \
     # Change mouse actions for taskbar
     sed -i 's/mouse_middle = close/mouse_middle = toggle/g' /usr/share/tint2/vertical-neutral-icons.tint2rc && \
     sed -i 's/mouse_right = maximize_restore/mouse_right = close/g' /usr/share/tint2/vertical-neutral-icons.tint2rc; \
     fi
 
-#RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-#    apt-get update && apt-get install -y \
-#    nextcloud-desktop-cmd && \
-#    apt-get clean && rm -rf /var/lib/apt/lists/*; \
-#    fi
+# Nextcloud desktop client needs bugfixes for CLI, so we need to install it from testing
+# https://github.com/nextcloud/desktop/issues/3144
+# https://github.com/nextcloud/desktop/pull/6773
+# https://packages.debian.org/trixie/nextcloud-desktop-cmd
+# https://unix.stackexchange.com/a/754563
+# add stable.pref and testing.pref to /etc/apt/preferences.d/ to get the newest version of nextcloud-desktop-cmd
+RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
+    # add testing as repository in sources.list.d
+    echo "deb http://deb.debian.org/debian testing main" > /etc/apt/sources.list.d/testing.list && \
+    # update apt preferences to exclude all but nextcloud package from testing
+    echo "Package: *\nPin: release n=testing\nPin-Priority: -10" > /etc/apt/preferences.d/testing.pref && \
+    echo "Package: nextcloud-desktop-cmd\nPin: release n=testing\nPin-Priority: 501" > /etc/apt/preferences.d/nextcloud.pref; \
+    fi
+
+RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
+    apt-get update && apt-get -t testing install -y \
+    nextcloud-desktop-cmd && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 RUN \
     # Write config entry for new data folder, cause otherwise pp would try to write in /dev which is not possible
@@ -89,7 +100,9 @@ RUN \
     install_app_icon.sh "$APP_ICON_URL"
 
 # Set the name of the application.
-ENV APP_NAME="Portfolio Performance"        
+ENV APP_NAME="Portfolio Performance"
+ENV APP_VERSION=${VERSION}
+ENV DOCKER_IMAGE_VERSION=${VERSION}-${TARGETARCH}-${PACKAGING}
 
 # Copy the start script.
 COPY rootfs/ /
