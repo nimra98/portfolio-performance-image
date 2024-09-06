@@ -1,13 +1,13 @@
 # Pull base image.
 FROM jlesage/baseimage-gui:ubuntu-24.04-v4
 
-# Target platform for the image (linux/amd64, linux/arm64)
+# Target platform for the image (amd64, arm64 (linux only))
 ARG TARGETARCH=amd64
 # Architecture labels of the application (linux.gtk.x86_64, linux.gtk.aarch64)
 ARG ARCHITECTURE=linux.gtk.x86_64
 
 # Can be packaged with firefox, nextcloud, firefox-nextcloud, or none
-ARG PACKAGING=none
+ARG PACKAGING=
 
 ARG VERSION=0.70.3
 ENV ARCHIVE=https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
@@ -78,6 +78,8 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
 # https://github.com/nextcloud/desktop/issues/3144
 # https://github.com/nextcloud/desktop/pull/6773
 RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
+    apt-get update && apt-get install -y \
+    software-properties-common && \
     add-apt-repository ppa:nextcloud-devs/client && \
     apt-get update && apt-get install -y \
     nextcloud-desktop-cmd && \

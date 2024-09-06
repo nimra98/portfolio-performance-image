@@ -13,6 +13,10 @@ ifndef TARGETARCH
 $(error TARGETARCH is not set)
 endif
 
+ifndef ARCHITECTURE
+$(error ARCHITECTURE is not set)
+endif
+
 ifndef PACKAGING
 $(error PACKAGING is not set)
 endif
@@ -24,16 +28,20 @@ build:
 		docker buildx build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
+		--build-arg ARCHITECTURE=$(ARCHITECTURE) \
 		--build-arg PACKAGING=$(PACKAGING) \
 		--output "type=docker,push=false" \
-		--tag $(IMAGE):$(VERSION) \
+		--tag $(IMAGE):$(VERSION)-$(PACKAGING) \
 		--tag $(IMAGE):latest \
 		. ; \
 	else \
 		docker buildx build \
 		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		--build-arg ARCHITECTURE=$(ARCHITECTURE) \
+		--build-arg PACKAGING=$(PACKAGING) \
 		--output "type=docker,push=false" \
-		--tag $(IMAGE):$(VERSION) \
+		--tag $(IMAGE):$(VERSION)-$(PACKAGING) \
 		. ; \
 	fi
 	
@@ -44,16 +52,22 @@ release:
 	if [ "$(LATEST)" = "true" ]; then \
 		docker buildx build \
 		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		--build-arg ARCHITECTURE=$(ARCHITECTURE) \
+		--build-arg PACKAGING=$(PACKAGING) \
 		--platform linux/amd64 \
 		--push \
-		--tag $(IMAGE):$(VERSION) \
-		--tag $(IMAGE):latest \
+		--tag $(IMAGE):$(PACKAGING)-$(VERSION) \
+		--tag $(IMAGE):$(PACKAGING) \
 		. ; \
 	else \
 		docker buildx build \
 		--build-arg VERSION=$(VERSION) \
-		-platform linux/amd64 \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		--build-arg ARCHITECTURE=$(ARCHITECTURE) \
+		--build-arg PACKAGING=$(PACKAGING) \
+		--platform linux/amd64 \
 		--output "type=image,push=true" \
-		--tag $(IMAGE):$(VERSION) \
+		--tag $(IMAGE):$(PACKAGING)-$(VERSION) \
 		. ; \
 	fi
