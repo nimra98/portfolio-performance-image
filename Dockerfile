@@ -1,21 +1,29 @@
 # Pull base image.
 FROM jlesage/baseimage-gui:ubuntu-24.04-v4
 
-# Target platform for the image (amd64, arm64 (linux only))
-ARG TARGETARCH=amd64
-# Architecture labels of the application (linux.gtk.x86_64, linux.gtk.aarch64)
-ARG ARCHITECTURE=linux.gtk.x86_64
-
 # Can be packaged with firefox, nextcloud, firefox-nextcloud, or none
 ARG PACKAGING=
 
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
 ARG VERSION=0.70.3
-ENV ARCHIVE=https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
 ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 
-RUN apt-get update && apt-get install -y wget && \
-    cd /opt && wget ${ARCHIVE} && tar xvzf PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz && \
-    rm PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+    apt-get update && apt-get install -y wget && \
+    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && \
+    rm PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz ; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    apt-get update && apt-get install -y wget && \
+    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz\
+    && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz && \
+    rm PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz ; \
+    fi
 
 # Install dependencies.
 RUN \
