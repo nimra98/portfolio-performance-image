@@ -15,12 +15,20 @@ wait $!
 # Remove .lock file
 rm /opt/portfolio/workspace/.sync.lock
 # Check if sync was successful
-if [ $? -eq 0 ]; then
-    echo "Sync successful"
-else
+if [ $? -ne 0 ]; then
     echo "Sync failed"
 fi' >> /tmp/start_sync.sh
 chmod +x /tmp/start_sync.sh
+
+echo '
+#!/bin/sh
+# every minute call /tmp/start_sync.sh
+while true; do
+    /tmp/start_sync.sh
+    sleep 60
+done
+' >> /tmp/autosync.sh
+chmod +x /tmp/autosync.sh
 
 
 autocheck_filesystem_inotify() {
@@ -43,12 +51,8 @@ fi
 if command -v nextcloudcmd >/dev/null 2>&1; then
     # Create nextcloud folder in /root
     mkdir -p /opt/portfolio/workspace/nextcloud
-    /tmp/start_sync.sh
+    /tmp/autosync.sh &
     autocheck_filesystem_inotify &
-    # add cronjob to sync every 1 minute
-    echo "*/1 * * * * /tmp/start_sync.sh" > /tmp/cronjob
-    crontab /tmp/cronjob
-    rm /tmp/cronjob
 fi
 
 # Set JAVA PATH variable for openjdk 17 jre

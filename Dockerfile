@@ -1,5 +1,5 @@
 # Pull base image.
-FROM jlesage/baseimage-gui:debian-12-v4
+FROM jlesage/baseimage-gui:ubuntu-24.04-v4
 
 # Target platform for the image (linux/amd64, linux/arm64)
 ARG TARGETARCH=amd64
@@ -17,16 +17,19 @@ RUN apt-get update && apt-get install -y wget && \
     cd /opt && wget ${ARCHIVE} && tar xvzf PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz && \
     rm PortfolioPerformance-${VERSION}-${ARCHITECTURE}.tar.gz
 
-## Install dependencies.
-#RUN \
-#    apt-get install -y \
-#    openjdk-17-jre \
-#    libwebkit2gtk-4.1-0 && \
-#    apt-get clean && \
-#    rm -rf /var/lib/apt/lists/*
+# Install dependencies.
+RUN \
+    apt-get install -y \
+    openjdk-17-jre \
+    libwebkit2gtk-4.1-0 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # If PACKAGING is set to firefox or firefox-nextcloud, install firefox-esr
 RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
+    apt-get update && apt-get install -y \
+    software-properties-common && \
+    add-apt-repository ppa:mozillateam/ppa && \
     apt-get update && apt-get install -y \
     firefox-esr \
     xfce4 \
@@ -42,10 +45,10 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
 
 # Prepare folder for a default Firefox profile and Create /etc/firefox/policies if it does not exist
 RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-    mkdir -p /root/.mozilla/firefox && \
-    chmod -R 777 /root/.mozilla/firefox && \
+    mkdir -p /root/.mozilla/firefox-esr && \
+    chmod -R 777 /root/.mozilla/firefox-esr && \
     mkdir -p /usr/lib/firefox-esr/distribution && \
-    echo '{"policies":{"OverrideFirstRunPage":"duckduckgo.com","OverridePostUpdatePage":"duckduckgo.com","ExtensionSettings":   {"uBlock0@raymondhill.net":{"installation_mode":"force_installed","install_url":"https://addons.mozilla.org/firefox/downloads/latest/  ublock-origin/latest.xpi"}}}}' > /usr/lib/firefox-esr/distribution/policies.json; \
+    echo '{"policies":{"OverrideFirstRunPage":"duckduckgo.com","OverridePostUpdatePage":"duckduckgo.com","ExtensionSettings":   {"uBlock0@raymondhill.net":{"installation_mode":"force_installed","install_url":"https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"}}}}' > /usr/lib/firefox-esr/distribution/policies.json; \
     fi
 
 
@@ -72,24 +75,12 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
     fi
 
 # Nextcloud desktop client needs bugfixes for CLI, so we need to install it from testing
-# This is considered illegal (or at least against all best practices) and should be avoided, but there is no other way to get the newest version of the package without building it from source (AppImage requires FUSE)
 # https://github.com/nextcloud/desktop/issues/3144
 # https://github.com/nextcloud/desktop/pull/6773
-# https://packages.debian.org/trixie/nextcloud-desktop-cmd
-# https://unix.stackexchange.com/a/754563
-# add stable.pref and testing.pref to /etc/apt/preferences.d/ to get the newest version of nextcloud-desktop-cmd
 RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-    # add testing as repository in sources.list.d
-    echo "deb http://deb.debian.org/debian testing main" > /etc/apt/sources.list.d/testing.list && \
-    # update apt preferences to exclude all but nextcloud package from testing
-    echo "Package: *\nPin: release n=testing\nPin-Priority: -10" > /etc/apt/preferences.d/testing.pref && \
-    echo "Package: nextcloud-desktop-cmd\nPin: release n=testing\nPin-Priority: 501" > /etc/apt/preferences.d/nextcloud.pref; \
-    fi
-RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-    apt-get update && apt-get -t testing install -y \
-    nextcloud-desktop-cmd \
-    openjdk-17-jre \
-    libwebkit2gtk-4.1-0 && \
+    add-apt-repository ppa:nextcloud-devs/client && \
+    apt-get update && apt-get install -y \
+    nextcloud-desktop-cmd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
