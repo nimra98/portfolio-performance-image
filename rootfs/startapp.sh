@@ -2,18 +2,18 @@
 
 echo '#!/bin/sh
 # Check if .lock file exists
-if [ -f /opt/portfolio/workspace/.sync.lock ]; then
+if [ -f /tmp/.sync.lock ]; then
     echo "Sync already in progress"
     return
 fi
 # Create .lock file to prevent multiple syncs
-touch /opt/portfolio/workspace/.sync.lock
+touch /tmp/.sync.lock
 # Sync files to nextcloud
 exec nextcloudcmd --non-interactive -h -s -u $NEXTCLOUD_USER -p $NEXTCLOUD_PASSWORD --path "$NEXTCLOUD_REMOTE_PATH" /opt/portfolio/workspace/nextcloud $NEXTCLOUD_URL &
 # Wait for sync to finish
 wait $!
 # Remove .lock file
-rm /opt/portfolio/workspace/.sync.lock
+rm /tmp/.sync.lock
 # Check if sync was successful
 if [ $? -ne 0 ]; then
     echo "Sync failed"
@@ -25,7 +25,7 @@ echo '
 # every minute call /tmp/start_sync.sh
 while true; do
     /tmp/start_sync.sh
-    sleep 60
+    sleep 300
 done
 ' >> /tmp/autosync.sh
 chmod +x /tmp/autosync.sh
@@ -52,6 +52,8 @@ if command -v nextcloudcmd >/dev/null 2>&1; then
     # Create nextcloud folder in /root
     mkdir -p /opt/portfolio/workspace/nextcloud
     /tmp/autosync.sh &
+    # wait for 2 seconds to make sure autosync.sh is running
+    sleep 2
     autocheck_filesystem_inotify &
 fi
 
