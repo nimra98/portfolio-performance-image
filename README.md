@@ -18,12 +18,14 @@ It also includes the following software (optional, depending on the Docker image
 | Image Tag                      | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2       | XFCE        |
 | ------------------------------ | --------------------- | ---------------- | ----------- | ----------- | ----------- |
 | pponly-`<version>`             | Specific Version      | -                | -           | -           | -           |
-| nextcloud                      | Latest                | Latest           | -           | -           | -           |
+| nextcloud                      | Latest                | Latest*           | -           | -           | -           |
 | nextcloud-`<version>`          | Specific Version      | Latest           | -           | -           | -           |
-| firefox                        | Latest                | -                | Latest      | Latest      | Latest      |
-| firefox-`<version>`            | Specific Version      | -                | Latest      | Latest      | Latest      |
-| firefox-nextcloud              | Latest                | Latest           | Latest      | Latest      | Latest      |
-| firefox-nextcloud-`<version>`  | Specific Version      | Latest           | Latest      | Latest      | Latest      |
+| firefox                        | Latest                | -                | Latest*      | Latest*      | Latest*      |
+| firefox-`<version>`            | Specific Version      | -                | Latest*      | Latest*      | Latest*     |
+| firefox-nextcloud              | Latest                | Latest*           | Latest*      | Latest*      | Latest*      |
+| firefox-nextcloud-`<version>`  | Specific Version      | Latest*           | Latest *     | Latest*      | Latest*      |
+
+`latest*`: The latest version available through apt at the time of the container build. This means that the version of the software can change if the container is rebuilt.
 
 Current refers to the latest version of the software available at the time of the container build. For firefox and Nextcloud PPAs are used to get the latest version (ppa:mozillateam/ppa and ppa:nextcloud-devs/client respectively).
 
