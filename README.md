@@ -1,5 +1,7 @@
 # Docker container for Portfolio Performance
+
 ## Summary
+
 This is a Docker container for [Portfolio Performance](https://www.portfolio-performance.info/en/).
 
 The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
@@ -7,6 +9,7 @@ The GUI of the application is accessed through a modern web browser (no installa
 This container is using [jlesage/baseimage-gui](https://hub.docker.com/r/jlesage/baseimage-gui) as baseimage.
 
 It also includes the following software (optional, depending on the Docker image tag used):
+
 - [Nextcloud Client](https://nextcloud.com/): to sync your Portfolio Performance files with a Nextcloud server. The sync is done at container startup and every 30 minutes or when a file is modified.
 - [Firefox ESR](https://www.mozilla.org/en-US/firefox/enterprise/): to access the web-pages from the application to look up further information.
 - [Tint2](https://gitlab.com/o9000/tint2): a lightweight panel/taskbar for the desktop.
@@ -14,28 +17,34 @@ It also includes the following software (optional, depending on the Docker image
 
 | Image Tag                | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2       | XFCE        |
 | ------------------------ | --------------------- | ---------------- | ----------- | ----------- | ----------- |
-| pponly                   | Current               | -                | -           | -           | -           |
-| pponly-0.70.4            | 0.70.4                | -                | -           | -           | -           |
-| nextcloud                | Current               | Current          | -           | -           | -           |
-| nextcloud-0.70.4         | 0.70.4                | Current          | -           | -           | -           |
-| firefox                  | Current               | -                | Current     | Current     | Current     |
-| firefox-0.70.4           | 0.70.4                | -                | Current     | Current     | Current     |
-| firefox-nextcloud        | Current               | Current          | Current     | Current     | Current     |
-| firefox-nextcloud-0.70.4 | 0.70.4                | Current          | Current     | Current     | Current     |
+| pponly                   | Latest                | -                | -           | -           | -           |
+| pponly-<version>         | Specific Version      | -                | -           | -           | -           |
+| nextcloud                | Latest                | Latest           | -           | -           | -           |
+| nextcloud-<version>      | Specific Version      | Latest           | -           | -           | -           |
+| firefox                  | Latest                | -                | Latest      | Latest      | Latest      |
+| firefox-<version>        | Specific Version      | -                | Latest      | Latest      | Latest      |
+| firefox-nextcloud        | Latest                | Latest           | Latest      | Latest      | Latest      |
+| firefox-nextcloud-<version> | Specific Version  | Latest           | Latest      | Latest      | Latest      |
 
 Current refers to the latest version of the software available at the time of the container build. For firefox and Nextcloud PPAs are used to get the latest version (ppa:mozillateam/ppa and ppa:nextcloud-devs/client respectively).
 
 ## Mount
+
 ### Personal portfolio files
+
 You have to mount /opt/portfolio/workspace to be able to get access and/or upload your Portfolio Performance files.
 
 #### Nextcloud
+
 If you are using Nextcloud, the files from the specified remote path will be synced to /opt/portfolio/workspace/nextcloud.
 All files in /opt/portfolio/workspace/nextcloud will be synced to the remote path at container startup and every 15 minutes or when a file is modified.
 
 ### Configugration
+
 You have to mount /config to persist you settings.
+
 ## Environment Variables
+
 The following public environment variables are provided by the baseimage:
 
 | Variable                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Default   |
@@ -50,7 +59,7 @@ The following public environment variables are provided by the baseimage:
 | `VNC_PASSWORD`          | Password needed to connect to the application's GUI.  See the [VNC Password](#vnc-password) section for more details.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `""`      |
 | `NEXTCLOUD_USER`        | OPTIONAL: Username for Nextcloud.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `""`      |
 | `NEXTCLOUD_PASSWORD`    | OPTIONAL: Password for Nextcloud. (If using 2FA, generate an app password in the Nextcloud settings.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `""`      |
-| `NEXTCLOUD_URL`         | OPTIONAL: URL for Nextcloud. (e.g. https://cloud.domain.tld)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `""`      |
+| `NEXTCLOUD_URL`         | OPTIONAL: URL for Nextcloud. (e.g. <https://cloud.domain.tld>)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `""`      |
 | `NEXTCLOUD_REMOTE_PATH` | OPTIONAL: Remote path for Nextcloud. (e.g. '/Documents')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `""`      |
 
 ## User/Group IDs
@@ -71,6 +80,7 @@ user owning the data volume on the host:
     id <username>
 
 Which gives an output like this one:
+
 ```
 uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),46(plugdev),113(lpadmin)
 ```
@@ -79,6 +89,7 @@ The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
 be given the container.
 
 ## Docker Compose Example
+
 ```yaml
 version: "3"
 services:
@@ -119,4 +130,3 @@ services:
       - "traefik.http.services.portfolio.loadbalancer.server.port=5800" # According to the port used by the container
 
 ```
-
