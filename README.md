@@ -15,16 +15,15 @@ It also includes the following software (optional, depending on the Docker image
 - [Tint2](https://gitlab.com/o9000/tint2): a lightweight panel/taskbar for the desktop.
 - [XFCE](https://www.xfce.org/): a lightweight desktop environment.
 
-| Image Tag                | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2       | XFCE        |
-| ------------------------ | --------------------- | ---------------- | ----------- | ----------- | ----------- |
-| pponly                   | Latest                | -                | -           | -           | -           |
-| pponly-<version>         | Specific Version      | -                | -           | -           | -           |
-| nextcloud                | Latest                | Latest           | -           | -           | -           |
-| nextcloud-<version>      | Specific Version      | Latest           | -           | -           | -           |
-| firefox                  | Latest                | -                | Latest      | Latest      | Latest      |
-| firefox-<version>        | Specific Version      | -                | Latest      | Latest      | Latest      |
-| firefox-nextcloud        | Latest                | Latest           | Latest      | Latest      | Latest      |
-| firefox-nextcloud-<version> | Specific Version  | Latest           | Latest      | Latest      | Latest      |
+| Image Tag                      | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2       | XFCE        |
+| ------------------------------ | --------------------- | ---------------- | ----------- | ----------- | ----------- |
+| pponly-`<version>`             | Specific Version      | -                | -           | -           | -           |
+| nextcloud                      | Latest                | Latest           | -           | -           | -           |
+| nextcloud-`<version>`          | Specific Version      | Latest           | -           | -           | -           |
+| firefox                        | Latest                | -                | Latest      | Latest      | Latest      |
+| firefox-`<version>`            | Specific Version      | -                | Latest      | Latest      | Latest      |
+| firefox-nextcloud              | Latest                | Latest           | Latest      | Latest      | Latest      |
+| firefox-nextcloud-`<version>`  | Specific Version      | Latest           | Latest      | Latest      | Latest      |
 
 Current refers to the latest version of the software available at the time of the container build. For firefox and Nextcloud PPAs are used to get the latest version (ppa:mozillateam/ppa and ppa:nextcloud-devs/client respectively).
 
