@@ -12,19 +12,6 @@ ARG TARGETARCH
 ARG VERSION=0.70.3
 ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-    apt-get update && apt-get install -y wget && \
-    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && \
-    rm PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz ; \
-    fi
-
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    apt-get update && apt-get install -y wget && \
-    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz\
-    && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz && \
-    rm PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz ; \
-    fi
-
 # Install dependencies.
 RUN \
     apt-get install -y \
@@ -92,6 +79,19 @@ RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ];
     apt-get update && apt-get install -y \
     nextcloud-desktop-cmd && \
     apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+    apt-get update && apt-get install -y wget && \
+    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && \
+    rm PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz ; \
+    fi
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    apt-get update && apt-get install -y wget && \
+    cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz\
+    && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz && \
+    rm PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz ; \
     fi
 
 RUN \
