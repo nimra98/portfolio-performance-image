@@ -14,6 +14,7 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 
 # Install dependencies.
 RUN \
+    apt-get update && \
     apt-get install -y \
     openjdk-17-jre \
     libwebkit2gtk-4.1-0 && \
