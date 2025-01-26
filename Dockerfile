@@ -1,5 +1,5 @@
 # Pull base image.
-FROM jlesage/baseimage-gui:ubuntu-24.04-v4
+FROM jlesage/baseimage-gui:ubuntu-24.04-v4.6.7
 
 # Can be packaged with firefox, nextcloud, firefox-nextcloud, or none
 ARG PACKAGING=
