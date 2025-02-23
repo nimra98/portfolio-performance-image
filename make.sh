@@ -8,7 +8,12 @@ fi
 
 VERSION=$1
 
-sudo make release VERSION=$VERSION LATEST=true PACKAGING=pponly
-sudo make release VERSION=$VERSION LATEST=true PACKAGING=nextcloud
-sudo make release VERSION=$VERSION LATEST=true PACKAGING=firefox
-sudo make release VERSION=$VERSION LATEST=true PACKAGING=firefox-nextcloud
+sudo make release-amd64 VERSION=$VERSION LATEST=true PACKAGING=pponly
+sudo make release-amd64 VERSION=$VERSION LATEST=true PACKAGING=nextcloud
+sudo make release-amd64 VERSION=$VERSION LATEST=true PACKAGING=firefox
+sudo make release-amd64 VERSION=$VERSION LATEST=true PACKAGING=firefox-nextcloud
+
+sudo make release-arm64 VERSION=$VERSION LATEST=true PACKAGING=pponly
+sudo make release-arm64 VERSION=$VERSION LATEST=true PACKAGING=nextcloud
+sudo make release-arm64 VERSION=$VERSION LATEST=true PACKAGING=firefox
+sudo make release-arm64 VERSION=$VERSION LATEST=true PACKAGING=firefox-nextcloud
