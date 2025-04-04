@@ -97,7 +97,7 @@ be given the container.
 version: "3"
 services:
   portfolio-performance:
-    image: nimra98/portfolio-performance:latest
+    image: nimra98/portfolio-performance:firefox
     container_name: portfolio
     restart: unless-stopped
     #ports: # this is not needed when using traefik
