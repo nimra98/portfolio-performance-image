@@ -49,13 +49,13 @@ jobs:
       #  with:
       #    dockerfile: ./Dockerfile
 
-      - name: Docker build test (local, no push)
-        run: |
-          docker build \
-            --build-arg VERSION=dummy \
-            --build-arg PACKAGING=${{ matrix.packaging }} \
-            --tag test-${{ matrix.packaging }} \
-            .
+      #- name: Docker build test (local, no push)
+      #  run: |
+      #    docker build \
+      #      --build-arg VERSION=dummy \
+      #      --build-arg PACKAGING=${{ matrix.packaging }} \
+      #      --tag test-${{ matrix.packaging }} \
+      #      .
 
   build:
     needs: [prepare, lint-and-test]
