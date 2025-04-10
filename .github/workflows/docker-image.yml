@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Multiarch Docker Build & Test
 
 on:
   push:
@@ -7,11 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version für das Docker Image'
+        description: 'Version für das Docker Image (z.B. 1.2.3)'
         required: true
       latest:
-        description: 'Als latest taggen?'
-        required: true
+        description: 'Soll ein :latest-Tag gesetzt werden?'
         type: boolean
         default: false
 
@@ -19,124 +18,86 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set_vars.outputs.version }}
-      latest: ${{ steps.set_vars.outputs.latest }}
+      version: ${{ steps.vars.outputs.version }}
+      latest: ${{ steps.vars.outputs.latest }}
     steps:
-      - name: Set variables
-        id: set_vars
+      - id: vars
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            echo "version=$(echo ${GITHUB_REF#refs/tags/v})" >> $GITHUB_OUTPUT
-            # Set latest=true if version doesn't contain hyphen
-            if [[ ! "$(echo ${GITHUB_REF#refs/tags/v})" =~ "-" ]]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "latest=${{ github.event.inputs.latest }}" >> $GITHUB_OUTPUT
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "latest=true" >> $GITHUB_OUTPUT
             else
               echo "latest=false" >> $GITHUB_OUTPUT
             fi
-          else
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            echo "latest=${{ github.event.inputs.latest }}" >> $GITHUB_OUTPUT
           fi
 
-  build-amd64:
-    needs: prepare
+  lint-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Dockerfile lint
+        uses: hadolint/hadolint-action@v3.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockerfile: ./Dockerfile
 
-      - name: Build and push AMD64 image
+      - name: Docker build test (local, no push)
         run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-          PACKAGING="${{ matrix.packaging }}"
-          IMAGE="nimra98/portfolio-performance"
-          
-          docker buildx build \
-            --build-arg VERSION=${VERSION} \
-            --build-arg PACKAGING=${PACKAGING} \
-            --output "type=image,push=true" \
-            --tag ${IMAGE}:${PACKAGING}-${VERSION}-amd64 \
+          docker build \
+            --build-arg VERSION=dummy \
+            --build-arg PACKAGING=${{ matrix.packaging }} \
+            --tag test-${{ matrix.packaging }} \
             .
 
-  build-arm64:
-    needs: prepare
-    runs-on: ubuntu-24.04-arm
+  build:
+    needs: [prepare, lint-and-test]
     strategy:
       matrix:
+        arch: [amd64, arm64]
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Docker login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push ARM64 image
+      - name: Build and push Docker image
         run: |
+          IMAGE="nimra98/portfolio-performance"
           VERSION="${{ needs.prepare.outputs.version }}"
           PACKAGING="${{ matrix.packaging }}"
-          IMAGE="nimra98/portfolio-performance"
-          
+          ARCH="${{ matrix.arch }}"
+
+          TAG="$IMAGE:$PACKAGING-$VERSION"
+
           docker buildx build \
-            --build-arg VERSION=${VERSION} \
-            --build-arg PACKAGING=${PACKAGING} \
-            --output "type=image,push=true" \
-            --tag ${IMAGE}:${PACKAGING}-${VERSION}-arm64 \
+            --platform "linux/$ARCH" \
+            --build-arg VERSION=$VERSION \
+            --build-arg PACKAGING=$PACKAGING \
+            --tag $TAG \
+            --push \
             .
 
-  create-manifests:
-    needs: [prepare, build-amd64, build-arm64]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
-    steps:
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Create and push multi-arch manifest
-        run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-          PACKAGING="${{ matrix.packaging }}"
-          LATEST="${{ needs.prepare.outputs.latest }}"
-          IMAGE="nimra98/portfolio-performance"
-          
-          # Enable Docker CLI experimental features
-          export DOCKER_CLI_EXPERIMENTAL=enabled
-          
-          # Create and push versioned manifest
-          docker manifest create ${IMAGE}:${PACKAGING}-${VERSION} \
-            ${IMAGE}:${PACKAGING}-${VERSION}-amd64 \
-            ${IMAGE}:${PACKAGING}-${VERSION}-arm64
-          
-          docker manifest push ${IMAGE}:${PACKAGING}-${VERSION}
-          
-          # If latest, create and push latest manifest for this packaging type
-          if [ "${LATEST}" = "true" ]; then
-            docker manifest create ${IMAGE}:${PACKAGING} \
-              ${IMAGE}:${PACKAGING}-${VERSION}-amd64 \
-              ${IMAGE}:${PACKAGING}-${VERSION}-arm64
-            
-            docker manifest push ${IMAGE}:${PACKAGING}
+          if [ "${{ needs.prepare.outputs.latest }}" = "true" ]; then
+            docker buildx build \
+              --platform "linux/$ARCH" \
+              --build-arg VERSION=$VERSION \
+              --build-arg PACKAGING=$PACKAGING \
+              --tag $IMAGE:$PACKAGING \
+              --push \
+              .
           fi
