@@ -66,7 +66,6 @@ jobs:
           docker buildx build \
             --build-arg VERSION=${VERSION} \
             --build-arg PACKAGING=${PACKAGING} \
-            --platform linux/amd64 \
             --output "type=image,push=true" \
             --tag ${IMAGE}:${PACKAGING}-${VERSION}-amd64 \
             .
@@ -99,7 +98,6 @@ jobs:
           docker buildx build \
             --build-arg VERSION=${VERSION} \
             --build-arg PACKAGING=${PACKAGING} \
-            --platform linux/arm64 \
             --output "type=image,push=true" \
             --tag ${IMAGE}:${PACKAGING}-${VERSION}-arm64 \
             .
