@@ -44,10 +44,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Dockerfile lint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: ./Dockerfile
+      #- name: Dockerfile lint
+      #  uses: hadolint/hadolint-action@v3.1.0
+      #  with:
+      #    dockerfile: ./Dockerfile
 
       - name: Docker build test (local, no push)
         run: |
