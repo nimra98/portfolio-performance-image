@@ -67,7 +67,7 @@ jobs:
             --build-arg VERSION=${VERSION} \
             --build-arg PACKAGING=${PACKAGING} \
             --platform linux/amd64 \
-            --push \
+            --output "type=image,push=true" \
             --tag ${IMAGE}:${PACKAGING}-${VERSION}-amd64 \
             .
 
@@ -100,7 +100,7 @@ jobs:
             --build-arg VERSION=${VERSION} \
             --build-arg PACKAGING=${PACKAGING} \
             --platform linux/arm64 \
-            --push \
+            --output "type=image,push=true" \
             --tag ${IMAGE}:${PACKAGING}-${VERSION}-arm64 \
             .
 
