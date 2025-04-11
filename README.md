@@ -17,15 +17,16 @@ It also includes the following software (optional, depending on the Docker image
 - [Tint2](https://gitlab.com/o9000/tint2): a lightweight panel/taskbar for the desktop.
 - [XFCE](https://www.xfce.org/): a lightweight desktop environment.
 
-| Image Tag                      | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2       | XFCE        |
-| ------------------------------ | --------------------- | ---------------- | ----------- | ----------- | ----------- |
-| pponly-`<version>`             | Specific Version      | -                | -           | -           | -           |
-| nextcloud                      | Latest                | Latest*           | -           | -           | -           |
-| nextcloud-`<version>`          | Specific Version      | Latest           | -           | -           | -           |
-| firefox                        | Latest                | -                | Latest*      | Latest*      | Latest*      |
-| firefox-`<version>`            | Specific Version      | -                | Latest*      | Latest*      | Latest*     |
-| firefox-nextcloud              | Latest                | Latest*           | Latest*      | Latest*      | Latest*      |
-| firefox-nextcloud-`<version>`  | Specific Version      | Latest*           | Latest *     | Latest*      | Latest*      |
+| Image Tag                     | Portfolio Performance | Nextcloud Client | Firefox ESR | Tint2   | XFCE    |
+| ----------------------------- | --------------------- | ---------------- | ----------- | ------- | ------- |
+| pponly                        | Latest                | -                | -           | -       | -       |
+| pponly-`<version>`            | Specific Version      | -                | -           | -       | -       |
+| nextcloud                     | Latest                | Latest*          | -           | -       | -       |
+| nextcloud-`<version>`         | Specific Version      | Latest           | -           | -       | -       |
+| firefox                       | Latest                | -                | Latest*     | Latest* | Latest* |
+| firefox-`<version>`           | Specific Version      | -                | Latest*     | Latest* | Latest* |
+| firefox-nextcloud             | Latest                | Latest*          | Latest*     | Latest* | Latest* |
+| firefox-nextcloud-`<version>` | Specific Version      | Latest*          | Latest *    | Latest* | Latest* |
 
 `latest*`: The latest version available through apt at the time of the container build. This means that the version of the software can change if the container is rebuilt.
 
@@ -62,7 +63,7 @@ The following public environment variables are provided by the baseimage:
 | `VNC_PASSWORD`          | Password needed to connect to the application's GUI.  See the [VNC Password](#vnc-password) section for more details.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `""`      |
 | `NEXTCLOUD_USER`        | OPTIONAL: Username for Nextcloud.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `""`      |
 | `NEXTCLOUD_PASSWORD`    | OPTIONAL: Password for Nextcloud. (If using 2FA, generate an app password in the Nextcloud settings.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `""`      |
-| `NEXTCLOUD_URL`         | OPTIONAL: URL for Nextcloud. (e.g. <https://cloud.domain.tld>)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `""`      |
+| `NEXTCLOUD_URL`         | OPTIONAL: URL for Nextcloud. (e.g. <https://cloud.domain.tld>)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `""`      |
 | `NEXTCLOUD_REMOTE_PATH` | OPTIONAL: Remote path for Nextcloud. (e.g. '/Documents')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `""`      |
 
 ## User/Group IDs
