@@ -1,5 +1,16 @@
 #!/bin/sh
 
+# Set default values if environment variables are not set
+USER_LANGUAGE=${USER_LANGUAGE:-en}
+USER_COUNTRY=${USER_COUNTRY:-US}
+USER_TIMEZONE=${USER_TIMEZONE:-Etc/UTC}
+
+# Write the values to the config.ini file
+echo "osgi.nl=${USER_LANGUAGE}_${USER_COUNTRY}" >> /opt/portfolio/configuration/config.ini
+echo "user.language=$USER_LANGUAGE" >> /opt/portfolio/configuration/config.ini
+echo "user.country=$USER_COUNTRY" >> /opt/portfolio/configuration/config.ini
+echo "user.timezone=$USER_TIMEZONE" >> /opt/portfolio/configuration/config.ini
+
 echo '#!/bin/sh
 # Check if .lock file exists
 if [ -f /tmp/.sync.lock ]; then

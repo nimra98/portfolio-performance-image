@@ -65,6 +65,9 @@ The following public environment variables are provided by the baseimage:
 | `NEXTCLOUD_PASSWORD`    | OPTIONAL: Password for Nextcloud. (If using 2FA, generate an app password in the Nextcloud settings.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `""`      |
 | `NEXTCLOUD_URL`         | OPTIONAL: URL for Nextcloud. (e.g. <https://cloud.domain.tld>)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `""`      |
 | `NEXTCLOUD_REMOTE_PATH` | OPTIONAL: Remote path for Nextcloud. (e.g. '/Documents')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `""`      |
+| `USER_LANGUAGE` | The language to use for the application. It should be a valid ISO 639 alpha-2 or alpha-3 language code (e.g., `en`, `de`). | `en` |
+| `USER_COUNTRY` | The country to use for the application. It should be a valid ISO 3166 alpha-2 country code (e.g., `US`, `DE`). | `US` |
+| `USER_TIMEZONE` | The timezone to use for the application. It should be a valid tz database timezone (e.g., `America/New_York`, `Europe/Berlin`). | `Europe/Berlin` |
 
 ## User/Group IDs
 
@@ -112,6 +115,9 @@ services:
       DISPLAY_WIDTH: 1920
       DISPLAY_HEIGHT: 1080
       TZ: "Europe/Berlin"
+      USER_LANGUAGE: "de"
+      USER_COUNTRY: "DE"
+      USER_TIMEZONE: "Europe/Berlin"
       NEXTCLOUD_USER: "username"
       NEXTCLOUD_PASSWORD: "apppa-sswor-dappp-asswor"
       NEXTCLOUD_REMOTE_PATH: "/Documents"
@@ -127,10 +133,9 @@ services:
       #
       # Note: when used in docker-compose.yml all dollar signs in the hash need to be doubled for escaping.
       # To create user:password pair, it's possible to use this command:
-      # echo $(htpasswd -nB user) | sed -e s/\\$/\\$\\$/g
+      # echo $(htpasswd -nB user) | sed -e s/\$/\$\$/g
       #
       # Also note that dollar signs should NOT be doubled when they not evaluated (e.g. Ansible docker_container module).
       - "traefik.http.middlewares.sec.basicauth.users=user:xxxxxxxxxxxxxxxxxxxxxx" # Replace with your own user:password hash
       - "traefik.http.services.portfolio.loadbalancer.server.port=5800" # According to the port used by the container
 
-```

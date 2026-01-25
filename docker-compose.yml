@@ -14,7 +14,10 @@ services:
       GROUP_ID: 1000
       DISPLAY_WIDTH: 1920
       DISPLAY_HEIGHT: 1080
-      TZ: "Europe/Berlin" 
+      TZ: "Europe/Berlin"
+      USER_LANGUAGE: "en"
+      USER_COUNTRY: "US"
+      USER_TIMEZONE: "Europe/Berlin" 
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web-proxy"
