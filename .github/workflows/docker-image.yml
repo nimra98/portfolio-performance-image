@@ -1,9 +1,6 @@
 name: Build and Publish Docker Image
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -19,24 +16,14 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set_vars.outputs.version }}
-      latest: ${{ steps.set_vars.outputs.latest }}
+      version: ${{ github.event.inputs.version }}
+      latest: ${{ github.event.inputs.latest }}
     steps:
       - name: Set variables
         id: set_vars
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            echo "version=$(echo ${GITHUB_REF#refs/tags/v})" >> $GITHUB_OUTPUT
-            # latest=true, wenn die Version keinen Bindestrich enthält
-            if [[ ! "$(echo ${GITHUB_REF#refs/tags/v})" =~ "-" ]]; then
-              echo "latest=true" >> $GITHUB_OUTPUT
-            else
-              echo "latest=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            echo "latest=${{ github.event.inputs.latest }}" >> $GITHUB_OUTPUT
-          fi
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "latest=${{ github.event.inputs.latest }}" >> $GITHUB_OUTPUT
 
   build-amd64:
     needs: prepare

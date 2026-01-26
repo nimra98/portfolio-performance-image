@@ -1,0 +1,45 @@
+name: Check for new releases
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      trigger: ${{ steps.check.outputs.trigger }}
+    steps:
+      - name: Check for latest release and artifacts
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_RELEASE=$(gh release view -R portfolio-performance/portfolio --json tagName -q .tagName)
+          VERSION=${LATEST_RELEASE#v}
+          echo "Latest release is $LATEST_RELEASE"
+
+          ASSETS=$(gh release view $LATEST_RELEASE -R portfolio-performance/portfolio --json assets -q '.assets[].name')
+          echo "Assets are: $ASSETS"
+
+          if [[ "$ASSETS" == *".linux.x86_64.tar.gz"* && "$ASSETS" == *".linux.aarch64.tar.gz"* ]]; then
+            echo "All artifacts are present."
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "trigger=true" >> $GITHUB_OUTPUT
+          else
+            echo "Artifacts are missing."
+            echo "trigger=false" >> $GITHUB_OUTPUT
+          fi
+
+  trigger-build:
+    needs: check-release
+    if: needs.check-release.outputs.trigger == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger build workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run docker-image.yml -f version=${{ needs.check-release.outputs.version }} -f latest=true
