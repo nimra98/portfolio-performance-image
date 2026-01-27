@@ -2,7 +2,7 @@ name: Check for new releases
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '45 * * * *'
   workflow_dispatch:
 
 jobs:
