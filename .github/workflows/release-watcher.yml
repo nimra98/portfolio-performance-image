@@ -21,6 +21,22 @@ jobs:
           VERSION=${LATEST_RELEASE#v}
           echo "Latest release is $LATEST_RELEASE"
 
+          # Check if image already exists
+          TAG_EXISTS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/nimra98/portfolio-performance/tags/pponly-${VERSION}")
+          echo "Docker Hub API returned HTTP code: $TAG_EXISTS_CODE"
+
+          if [ "$TAG_EXISTS_CODE" = "200" ]; then
+            echo "Image for version $VERSION already exists. Skipping build."
+            echo "trigger=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "$TAG_EXISTS_CODE" != "404" ]; then
+            echo "Error: Received unexpected HTTP code $TAG_EXISTS_CODE from Docker Hub. Failing workflow to retry later."
+            exit 1
+          fi
+
+          echo "Image does not exist. Checking for release assets..."
           ASSETS=$(gh release view $LATEST_RELEASE -R portfolio-performance/portfolio --json assets -q '.assets[].name')
           echo "Assets are: $ASSETS"
 
