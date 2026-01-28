@@ -6,10 +6,24 @@ USER_COUNTRY=${USER_COUNTRY:-US}
 USER_TIMEZONE=${USER_TIMEZONE:-Etc/UTC}
 
 # Write the values to the config.ini file
-echo "osgi.nl=${USER_LANGUAGE}_${USER_COUNTRY}" >> /opt/portfolio/configuration/config.ini
-echo "user.language=$USER_LANGUAGE" >> /opt/portfolio/configuration/config.ini
-echo "user.country=$USER_COUNTRY" >> /opt/portfolio/configuration/config.ini
-echo "user.timezone=$USER_TIMEZONE" >> /opt/portfolio/configuration/config.ini
+CONFIG_FILE="/opt/portfolio/configuration/config.ini"
+mkdir -p "$(dirname "$CONFIG_FILE")"
+touch "$CONFIG_FILE"
+
+for entry in \
+    "osgi.nl=${USER_LANGUAGE}_${USER_COUNTRY}" \
+    "user.language=$USER_LANGUAGE" \
+    "user.country=$USER_COUNTRY" \
+    "user.timezone=$USER_TIMEZONE"
+do
+    key=$(echo "$entry" | cut -d'=' -f1)
+    value=$(echo "$entry" | cut -d'=' -f2-)
+    if grep -q "^${key}=" "$CONFIG_FILE"; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$CONFIG_FILE"
+    else
+        echo "$entry" >> "$CONFIG_FILE"
+    fi
+done
 
 echo '#!/bin/sh
 # Check if .lock file exists
