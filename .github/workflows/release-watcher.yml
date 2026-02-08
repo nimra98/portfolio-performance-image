@@ -55,6 +55,8 @@ jobs:
     if: needs.check-release.outputs.trigger == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Trigger build workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
