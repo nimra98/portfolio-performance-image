@@ -134,3 +134,29 @@ jobs:
               ${IMAGE}:${PACKAGING}-${VERSION}-arm64
             docker manifest push ${IMAGE}:${PACKAGING}
           fi
+
+  create-release:
+    needs: [prepare, create-manifests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          body: |
+            Docker images for version ${{ needs.prepare.outputs.version }} have been successfully published to Docker Hub.
+            
+            Images available:
+            - `nimra98/portfolio-performance:pponly-${{ needs.prepare.outputs.version }}`
+            - `nimra98/portfolio-performance:nextcloud-${{ needs.prepare.outputs.version }}`
+            - `nimra98/portfolio-performance:firefox-${{ needs.prepare.outputs.version }}`
+            - `nimra98/portfolio-performance:firefox-nextcloud-${{ needs.prepare.outputs.version }}`
+          draft: false
+          prerelease: false
+          generate_release_notes: true
