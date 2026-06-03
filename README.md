@@ -69,7 +69,7 @@ The following public environment variables are provided by the baseimage:
 | `NEXTCLOUD_REMOTE_PATH` | OPTIONAL: Remote path for Nextcloud. (e.g. '/Documents')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `""`      |
 | `USER_LANGUAGE` | The language to use for the application. It should be a valid ISO 639 alpha-2 or alpha-3 language code (e.g., `en`, `de`). | `en` |
 | `USER_COUNTRY` | The country to use for the application. It should be a valid ISO 3166 alpha-2 country code (e.g., `US`, `DE`). | `US` |
-| `USER_TIMEZONE` | The timezone to use for the application. It should be a valid tz database timezone (e.g., `America/New_York`, `Europe/Berlin`). | `Europe/Berlin` |
+| `USER_TIMEZONE` | The timezone to use for the application. It should be a valid tz database timezone (e.g., `America/New_York`, `Europe/Berlin`). | `Etc/UTC` |
 
 ## User/Group IDs
 
@@ -100,7 +100,6 @@ be given the container.
 ## Docker Compose Example
 
 ```yaml
-version: "3"
 services:
   portfolio-performance:
     image: nimra98/portfolio-performance:firefox
