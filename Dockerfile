@@ -15,13 +15,14 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 # Install dependencies.
 RUN \
     apt-get update && \
+    # Systemd postinst patchen - mkdir /var/log schlägt in Docker fehl
     mkdir -p /var/lib/dpkg/info && \
-    DEBIAN_FRONTEND=noninteractive \
-    DEB_BUILD_OPTIONS=nocheck \
+    dpkg-divert --local --rename --add /var/lib/dpkg/info/systemd.postinst && \
+    printf '#!/bin/sh\nexit 0\n' > /var/lib/dpkg/info/systemd.postinst && \
+    chmod +x /var/lib/dpkg/info/systemd.postinst && \
     apt-get install -y \
         openjdk-21-jre \
-        libwebkit2gtk-4.1-0 || true && \
-    dpkg --configure -a --force-confold 2>/dev/null || true && \
+        libwebkit2gtk-4.1-0 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
