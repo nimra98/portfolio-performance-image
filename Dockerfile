@@ -16,6 +16,7 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 RUN \
     apt-get update && \
     apt-get install -y \
+    --no-install-recommends \
     libsystemd0 \
     openjdk-21-jre \
     libwebkit2gtk-4.1-0 && \
