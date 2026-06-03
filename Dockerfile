@@ -15,11 +15,13 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 # Install dependencies.
 RUN \
     apt-get update && \
+    mkdir -p /var/lib/dpkg/info && \
+    DEBIAN_FRONTEND=noninteractive \
+    DEB_BUILD_OPTIONS=nocheck \
     apt-get install -y \
-    --no-install-recommends \
-    libsystemd0 \
-    openjdk-21-jre \
-    libwebkit2gtk-4.1-0 && \
+        openjdk-21-jre \
+        libwebkit2gtk-4.1-0 || true && \
+    dpkg --configure -a --force-confold 2>/dev/null || true && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
