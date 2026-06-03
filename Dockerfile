@@ -14,20 +14,15 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 
 # Install dependencies.
 RUN \
-    apt-get update && \
-    mkdir -p /config/log /tmp/run && \
-    apt-get install -y \
+    add-pkg \
         openjdk-21-jre \
-        libwebkit2gtk-4.1-0 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        libwebkit2gtk-4.1-0
 
 # If PACKAGING is set to firefox or firefox-nextcloud, install firefox-esr
 RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-    apt-get update && apt-get install -y \
-    software-properties-common && \
+    add-pkg software-properties-common && \
     add-apt-repository ppa:mozillateam/ppa && \
-    apt-get update && apt-get install -y \
+    add-pkg \
     firefox-esr \
     xfce4 \
     thunar \
@@ -36,8 +31,7 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
     dbus \
     dbus-x11 \
     inotify-tools \
-    cron && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    cron; \
     fi
 
 # Prepare folder for a default Firefox profile and Create /etc/firefox/policies if it does not exist
@@ -75,22 +69,19 @@ RUN if [ "$PACKAGING" = "firefox" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; t
 # https://github.com/nextcloud/desktop/issues/3144
 # https://github.com/nextcloud/desktop/pull/6773
 RUN if [ "$PACKAGING" = "nextcloud" ] || [ "$PACKAGING" = "firefox-nextcloud" ]; then \
-    apt-get update && apt-get install -y \
-    software-properties-common && \
+    add-pkg software-properties-common && \
     add-apt-repository ppa:nextcloud-devs/client && \
-    apt-get update && apt-get install -y \
-    nextcloud-desktop-cmd && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    add-pkg nextcloud-desktop-cmd; \
     fi
 
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
-    apt-get update && apt-get install -y wget && \
+    add-pkg wget && \
     cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz && \
     rm PortfolioPerformance-${VERSION}-linux.gtk.x86_64.tar.gz ; \
     fi
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    apt-get update && apt-get install -y wget && \
+    add-pkg wget && \
     cd /opt && wget https://github.com/buchen/portfolio/releases/download/${VERSION}/PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz\
     && tar xvzf PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz && \
     rm PortfolioPerformance-${VERSION}-linux.gtk.aarch64.tar.gz ; \
