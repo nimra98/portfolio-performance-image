@@ -1,4 +1,3 @@
-version: "3"
 services:
   portfolio-performance:
     image: nimra98/portfolio-performance:latest
