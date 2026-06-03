@@ -15,8 +15,8 @@ ENV APP_ICON_URL=https://www.portfolio-performance.info/images/logo.png
 # Install dependencies.
 RUN \
     apt-get update && \
-    apt-get install -y systemd && \
     apt-get install -y \
+    libsystemd0 \
     openjdk-21-jre \
     libwebkit2gtk-4.1-0 && \
     apt-get clean && \
