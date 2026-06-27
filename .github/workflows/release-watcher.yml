@@ -56,9 +56,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Trigger build workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check-release.outputs.version }}
         run: |
-          gh workflow run docker-image.yml -f version=${{ needs.check-release.outputs.version }} -f latest=true
+          gh workflow run docker-image.yml -f version=${VERSION} -f latest=true

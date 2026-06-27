@@ -24,9 +24,12 @@ jobs:
     steps:
       - name: Set variables
         id: set_vars
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          INPUT_LATEST: ${{ github.event.inputs.latest }}
         run: |
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          echo "latest=${{ github.event.inputs.latest }}" >> $GITHUB_OUTPUT
+          echo "version=$INPUT_VERSION" >> $GITHUB_OUTPUT
+          echo "latest=$INPUT_LATEST" >> $GITHUB_OUTPUT
 
   build-amd64:
     needs: prepare
@@ -36,7 +39,7 @@ jobs:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -48,9 +51,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push AMD64 image
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PACKAGING: ${{ matrix.packaging }}
         run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-          PACKAGING="${{ matrix.packaging }}"
           IMAGE="nimra98/portfolio-performance"
           
           # Baue das AMD64 Image als reines Docker Image (kein Manifest)
@@ -72,7 +76,7 @@ jobs:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -84,9 +88,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push ARM64 image
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PACKAGING: ${{ matrix.packaging }}
         run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-          PACKAGING="${{ matrix.packaging }}"
           IMAGE="nimra98/portfolio-performance"
           
           # Baue das ARM64 Image als reines Docker Image
@@ -114,10 +119,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Create and push multi-arch manifest
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PACKAGING: ${{ matrix.packaging }}
+          LATEST: ${{ needs.prepare.outputs.latest }}
         run: |
-          VERSION="${{ needs.prepare.outputs.version }}"
-          PACKAGING="${{ matrix.packaging }}"
-          LATEST="${{ needs.prepare.outputs.latest }}"
           IMAGE="nimra98/portfolio-performance"
           
           # Aktiviere experimentelle Docker CLI-Features
@@ -145,7 +151,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
