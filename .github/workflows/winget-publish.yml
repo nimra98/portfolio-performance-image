@@ -40,7 +40,9 @@ jobs:
           $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$Version/PortfolioPerformance-$Version-setup.exe"
           
           # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
-          .\wingetcreate.exe update buchen.portfolio -v $Version -u $InstallerUrl -o .\manifests
+          # HINWEIS: Nullsoft Installer werden oft fälschlicherweise als x86 erkannt. 
+          # Wir erzwingen hier 'x64' durch das Anhängen von '|x64' an die URL.
+          .\wingetcreate.exe update buchen.portfolio -v $Version -u "$InstallerUrl|x64" -o .\manifests
 
           # 2. Release Body einlesen und am Trenner '---' aufteilen
           $ReleaseBody = Get-Content release_body.txt -Raw
