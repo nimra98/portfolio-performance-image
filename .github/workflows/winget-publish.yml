@@ -25,9 +25,10 @@ jobs:
         id: get_release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
           # Holt die Release Notes direkt über die GitHub CLI von der Portfolio Performance Repository
-          $ReleaseBody = gh release view ${{ github.event.inputs.version }} --repo portfolio-performance/portfolio --json body --jq '.body'
+          $ReleaseBody = gh release view $env:VERSION --repo portfolio-performance/portfolio --json body --jq '.body'
           
           # Speichere Release Notes in einer temporären Datei um multiline-Probleme als Env-Variable zu vermeiden
           $ReleaseBody | Out-File -FilePath release_body.txt -Encoding utf8
@@ -35,20 +36,14 @@ jobs:
       - name: Update Manifests & Split Release Notes
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          $Version = "${{ github.event.inputs.version }}"
-          $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$Version/PortfolioPerformance-$Version-setup.exe"
+          $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-setup.exe"
           
           # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
           # HINWEIS: Nullsoft Installer werden oft fälschlicherweise als x86 erkannt. 
           # Wir erzwingen hier 'x64' durch das Anhängen von '|x64' an die URL.
-          .\wingetcreate.exe update buchen.portfolio -v $Version -u "$InstallerUrl|x64" -o .\manifests
-
-          # 2. Release Body einlesen und am Trenner '---' aufteilen
-          $ReleaseBody = Get-Content release_body.txt -Raw
-          $Parts = $ReleaseBody -split '\s*---\s*'
-          $GermanNotes = $Parts[0].Trim()
-          $EnglishNotes = if ($Parts.Count -gt 1) { $Parts[1].Trim() } else { $GermanNotes }
+          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$InstallerUrl|x64" -o .\manifests
 
           # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
           $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
@@ -70,10 +65,16 @@ jobs:
               return $Content -replace '(?m)^ManifestType:', "$Injection`r`nManifestType:"
           }
 
+          # 2. Release Body einlesen und am Trenner '---' aufteilen
+          $ReleaseBody = Get-Content release_body.txt -Raw
+          $Parts = $ReleaseBody -split '\s*---\s*'
+          $GermanNotes = $Parts[0].Trim()
+          $EnglishNotes = if ($Parts.Count -gt 1) { $Parts[1].Trim() } else { $GermanNotes }
+
           # 3. Deutsche Release Notes in de-DE.yaml patchen
           if ($DeFile -and (Test-Path $DeFile)) {
               $DeContent = Get-Content $DeFile -Raw
-              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes $Version
+              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes $env:VERSION
               Set-Content -Path $DeFile -Value $DeContent -NoNewline
           } else {
               Write-Warning "Deutsch-Manifest nicht gefunden!"
@@ -82,7 +83,7 @@ jobs:
           # 4. Englische Release Notes in en-US.yaml patchen
           if ($EnFile -and (Test-Path $EnFile)) {
               $EnContent = Get-Content $EnFile -Raw
-              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes $Version
+              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes $env:VERSION
               Set-Content -Path $EnFile -Value $EnContent -NoNewline
           } else {
               Write-Warning "Englisch-Manifest nicht gefunden!"
@@ -99,12 +100,13 @@ jobs:
         if: ${{ github.event.inputs.dry_run == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          $Version = "${{ github.event.inputs.version }}"
-          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
+          # Finde den Ordner, der die frisch generierten Yaml-Dateien enthält
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
           
           # Finale PR einreichen und Output erfassen! 
-          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $Version" $ManifestPath -t $env:GITHUB_TOKEN 2>&1
+          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $env:VERSION" $ManifestPath -t $env:GITHUB_TOKEN 2>&1
           
           # Output im Log ausgeben
           $SubmitOutput | Write-Host
