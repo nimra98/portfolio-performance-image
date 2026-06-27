@@ -55,18 +55,35 @@ jobs:
           $DeFile = Join-Path $ManifestPath "de-DE.yaml"
           $EnFile = Join-Path $ManifestPath "en-US.yaml"
 
+          function Update-ReleaseNotes($Content, $Notes) {
+              # Entferne evtl. leere Zeilen am Anfang/Ende und formatiere mit passendem Einzug
+              $Notes = $Notes.Trim()
+              $FormattedNotes = "ReleaseNotes: |-`r`n  " + ($Notes -replace '\r?\n', "`r`n  ")
+              
+              if ($Content -match '(?m)^ReleaseNotes:') {
+                  # Ersetze existierenden ReleaseNotes Block bis zum nächsten Root-Key
+                  return $Content -replace '(?ms)^ReleaseNotes:.*?(?=\r?\n\w+:|$)', $FormattedNotes
+              } elseif ($Content -match '(?m)^ReleaseNotesUrl:') {
+                  # Wenn ReleaseNotes fehlt, füge es vor ReleaseNotesUrl ein
+                  return $Content -replace '(?m)^ReleaseNotesUrl:', "$FormattedNotes`r`nReleaseNotesUrl:"
+              } else {
+                  # Fallback: Vor ManifestType einfügen
+                  return $Content -replace '(?m)^ManifestType:', "$FormattedNotes`r`nManifestType:"
+              }
+          }
+
           # 3. Deutsche Release Notes in de-DE.yaml patchen
           if (Test-Path $DeFile) {
               $DeContent = Get-Content $DeFile -Raw
-              $DeContent = $DeContent -replace '(?ms)ReleaseNotes: \|-.*?(?=\n\w+:|$)', "ReleaseNotes: |-\n  $($GermanNotes -replace '\n', "`n  ")`n"
-              Set-Content -Path $DeFile -Value $DeContent
+              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes
+              Set-Content -Path $DeFile -Value $DeContent -NoNewline
           }
 
           # 4. Englische Release Notes in en-US.yaml patchen
           if (Test-Path $EnFile) {
               $EnContent = Get-Content $EnFile -Raw
-              $EnContent = $EnContent -replace '(?ms)ReleaseNotes: \|-.*?(?=\n\w+:|$)', "ReleaseNotes: |-\n  $($EnglishNotes -replace '\n', "`n  ")`n"
-              Set-Content -Path $EnFile -Value $EnContent
+              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes
+              Set-Content -Path $EnFile -Value $EnContent -NoNewline
           }
           
       - name: Upload Manifests as Artifact (for Dry Run Inspection)
