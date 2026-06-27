@@ -52,38 +52,41 @@ jobs:
 
           # Pfade zu den generierten Dateien finden
           $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
-          $DeFile = Join-Path $ManifestPath "de-DE.yaml"
-          $EnFile = Join-Path $ManifestPath "en-US.yaml"
+          $DeFile = (Get-ChildItem -Path $ManifestPath -Filter "*de-DE.yaml").FullName
+          $EnFile = (Get-ChildItem -Path $ManifestPath -Filter "*en-US.yaml").FullName
 
-          function Update-ReleaseNotes($Content, $Notes) {
-              # Entferne evtl. leere Zeilen am Anfang/Ende und formatiere mit passendem Einzug
+          function Update-ReleaseNotes($Content, $Notes, $Version) {
               $Notes = $Notes.Trim()
-              $FormattedNotes = "ReleaseNotes: |-`r`n  " + ($Notes -replace '\r?\n', "`r`n  ")
+              $NotesFormatted = $Notes -replace '\r?\n', "`r`n  "
+              $Url = "https://github.com/portfolio-performance/portfolio/releases/tag/$Version"
               
-              if ($Content -match '(?m)^ReleaseNotes:') {
-                  # Ersetze existierenden ReleaseNotes Block bis zum nächsten Root-Key
-                  return $Content -replace '(?ms)^ReleaseNotes:.*?(?=\r?\n\w+:|$)', $FormattedNotes
-              } elseif ($Content -match '(?m)^ReleaseNotesUrl:') {
-                  # Wenn ReleaseNotes fehlt, füge es vor ReleaseNotesUrl ein
-                  return $Content -replace '(?m)^ReleaseNotesUrl:', "$FormattedNotes`r`nReleaseNotesUrl:"
-              } else {
-                  # Fallback: Vor ManifestType einfügen
-                  return $Content -replace '(?m)^ManifestType:', "$FormattedNotes`r`nManifestType:"
-              }
+              # Der zu injizierende Block
+              $Injection = "ReleaseNotesUrl: $Url`r`nReleaseNotes: |-`r`n  $NotesFormatted"
+              
+              # Bereinige das Feld falls es existiert, damit wir es nicht doppelt haben
+              $Content = $Content -replace '(?ms)^ReleaseNotesUrl:.*?(?=\r?\n\w+:|$)', ''
+              $Content = $Content -replace '(?ms)^ReleaseNotes:.*?(?=\r?\n\w+:|$)', ''
+              
+              # Füge es vor ManifestType ein (ManifestType steht garantiert immer ganz unten)
+              return $Content -replace '(?m)^ManifestType:', "$Injection`r`nManifestType:"
           }
 
           # 3. Deutsche Release Notes in de-DE.yaml patchen
-          if (Test-Path $DeFile) {
+          if ($DeFile -and (Test-Path $DeFile)) {
               $DeContent = Get-Content $DeFile -Raw
-              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes
+              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes $Version
               Set-Content -Path $DeFile -Value $DeContent -NoNewline
+          } else {
+              Write-Warning "Deutsch-Manifest nicht gefunden!"
           }
 
           # 4. Englische Release Notes in en-US.yaml patchen
-          if (Test-Path $EnFile) {
+          if ($EnFile -and (Test-Path $EnFile)) {
               $EnContent = Get-Content $EnFile -Raw
-              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes
+              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes $Version
               Set-Content -Path $EnFile -Value $EnContent -NoNewline
+          } else {
+              Write-Warning "Englisch-Manifest nicht gefunden!"
           }
           
       - name: Upload Manifests as Artifact (for Dry Run Inspection)
