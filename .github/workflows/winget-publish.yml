@@ -82,5 +82,14 @@ jobs:
           $Version = "${{ github.event.inputs.version }}"
           $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
           
-          # Finale PR einreichen! 
-          .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $Version" $ManifestPath -t $env:GITHUB_TOKEN
+          # Finale PR einreichen und Output erfassen! 
+          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $Version" $ManifestPath -t $env:GITHUB_TOKEN 2>&1
+          
+          # Output im Log ausgeben
+          $SubmitOutput | Write-Host
+          
+          # Output in die GitHub Actions Zusammenfassung (Step Summary) schreiben, damit der Link sofort sichtbar ist
+          "### WinGet PR Submit Result" >> $env:GITHUB_STEP_SUMMARY
+          "```text" >> $env:GITHUB_STEP_SUMMARY
+          $SubmitOutput >> $env:GITHUB_STEP_SUMMARY
+          "```" >> $env:GITHUB_STEP_SUMMARY
