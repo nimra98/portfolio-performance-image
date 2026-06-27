@@ -50,10 +50,9 @@ jobs:
           $GermanNotes = $Parts[0].Trim()
           $EnglishNotes = if ($Parts.Count -gt 1) { $Parts[1].Trim() } else { $GermanNotes }
 
-          # Pfade zu den generierten Dateien finden
-          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
-          $DeFile = (Get-ChildItem -Path $ManifestPath -Filter "*de-DE.yaml").FullName
-          $EnFile = (Get-ChildItem -Path $ManifestPath -Filter "*en-US.yaml").FullName
+          # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
+          $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
+          $EnFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*en-US.yaml" | Select-Object -First 1).FullName
 
           function Update-ReleaseNotes($Content, $Notes, $Version) {
               $Notes = $Notes.Trim()
