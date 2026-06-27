@@ -1,0 +1,86 @@
+name: Update WinGet Package (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (z.B. 0.84.2)'
+        required: true
+      dry_run:
+        description: 'Dry Run (Manifeste als Artefakt speichern, ABER KEIN PR an Microsoft senden)'
+        type: boolean
+        default: true
+
+jobs:
+  winget-pr:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download wingetcreate
+        run: Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+      
+      - name: Fetch GitHub Release Body
+        id: get_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Holt die Release Notes direkt über die GitHub CLI von der Portfolio Performance Repository
+          $ReleaseBody = gh release view ${{ github.event.inputs.version }} --repo portfolio-performance/portfolio --json body --jq '.body'
+          
+          # Speichere Release Notes in einer temporären Datei um multiline-Probleme als Env-Variable zu vermeiden
+          $ReleaseBody | Out-File -FilePath release_body.txt -Encoding utf8
+          
+      - name: Update Manifests & Split Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $Version = "${{ github.event.inputs.version }}"
+          $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$Version/PortfolioPerformance-$Version-setup.exe"
+          
+          # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
+          .\wingetcreate.exe update buchen.portfolio -v $Version -u $InstallerUrl -o .\manifests
+
+          # 2. Release Body einlesen und am Trenner '---' aufteilen
+          $ReleaseBody = Get-Content release_body.txt -Raw
+          $Parts = $ReleaseBody -split '\s*---\s*'
+          $GermanNotes = $Parts[0].Trim()
+          $EnglishNotes = if ($Parts.Count -gt 1) { $Parts[1].Trim() } else { $GermanNotes }
+
+          # Pfade zu den generierten Dateien finden
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
+          $DeFile = Join-Path $ManifestPath "de-DE.yaml"
+          $EnFile = Join-Path $ManifestPath "en-US.yaml"
+
+          # 3. Deutsche Release Notes in de-DE.yaml patchen
+          if (Test-Path $DeFile) {
+              $DeContent = Get-Content $DeFile -Raw
+              $DeContent = $DeContent -replace '(?ms)ReleaseNotes: \|-.*?(?=\n\w+:|$)', "ReleaseNotes: |-\n  $($GermanNotes -replace '\n', "`n  ")`n"
+              Set-Content -Path $DeFile -Value $DeContent
+          }
+
+          # 4. Englische Release Notes in en-US.yaml patchen
+          if (Test-Path $EnFile) {
+              $EnContent = Get-Content $EnFile -Raw
+              $EnContent = $EnContent -replace '(?ms)ReleaseNotes: \|-.*?(?=\n\w+:|$)', "ReleaseNotes: |-\n  $($EnglishNotes -replace '\n', "`n  ")`n"
+              Set-Content -Path $EnFile -Value $EnContent
+          }
+          
+      - name: Upload Manifests as Artifact (for Dry Run Inspection)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-manifests-${{ github.event.inputs.version }}
+          path: manifests/
+
+      - name: Submit PR to Microsoft
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $Version = "${{ github.event.inputs.version }}"
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "buchen.portfolio.yaml").Directory.FullName
+          
+          # Finale PR einreichen! 
+          .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $Version" $ManifestPath -t $env:GITHUB_TOKEN
