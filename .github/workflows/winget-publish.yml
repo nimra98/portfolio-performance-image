@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download wingetcreate
         run: Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
@@ -91,7 +91,7 @@ jobs:
           
       - name: Upload Manifests as Artifact (for Dry Run Inspection)
         if: ${{ github.event.inputs.dry_run == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: winget-manifests-${{ github.event.inputs.version }}
           path: manifests/
