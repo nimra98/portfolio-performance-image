@@ -96,6 +96,24 @@ jobs:
           name: winget-manifests-${{ github.event.inputs.version }}
           path: manifests/
 
+      - name: Setup Winget (for Local Testing)
+        uses: Cyberboss/install-winget@v1
+
+      - name: Test Local Installation
+        run: |
+          # Finde den Ordner mit den generierten Manifesten
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
+          
+          Write-Host "Aktiviere lokale Manifeste in Winget..."
+          winget settings --enable LocalManifestFiles
+          
+          Write-Host "Validiere Manifest..."
+          winget validate --manifest $ManifestPath
+          
+          Write-Host "Starte Test-Installation auf dem Runner..."
+          # Installiert die App direkt auf dem GitHub Runner (der Runner wird danach eh zerstört, dient also als Sandbox!)
+          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements
+
       - name: Submit PR to Microsoft
         if: ${{ github.event.inputs.dry_run == 'false' }}
         env:
