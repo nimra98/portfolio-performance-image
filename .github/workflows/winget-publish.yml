@@ -96,9 +96,6 @@ jobs:
           name: winget-manifests-${{ github.event.inputs.version }}
           path: manifests/
 
-      - name: Setup Winget (for Local Testing)
-        uses: Cyberboss/install-winget@v1
-
       - name: Test Local Installation
         run: |
           # Finde den Ordner mit den generierten Manifesten
