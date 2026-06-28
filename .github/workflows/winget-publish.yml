@@ -111,8 +111,15 @@ jobs:
           winget validate --manifest $ManifestPath
           
           Write-Host "Starte Test-Installation auf dem Runner..."
-          # Installiert die App direkt auf dem GitHub Runner (der Runner wird danach eh zerstört, dient also als Sandbox!)
-          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements
+          # Installiert die App direkt auf dem GitHub Runner (--verbose-logs für maximalen Output bei Fehlern)
+          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "❌ Die Test-Installation ist fehlgeschlagen! (Exit Code: $LASTEXITCODE). Bitte prüfen Sie die Logs oberhalb."
+              exit $LASTEXITCODE
+          } else {
+              Write-Host "✅ Die Test-Installation war erfolgreich!"
+          }
 
       - name: Submit PR to Microsoft
         if: ${{ github.event.inputs.dry_run == 'false' }}
