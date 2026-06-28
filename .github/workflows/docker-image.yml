@@ -18,6 +18,7 @@ on:
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ github.event.inputs.version }}
       latest: ${{ github.event.inputs.latest }}
@@ -34,6 +35,7 @@ jobs:
   build-amd64:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       matrix:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
@@ -71,6 +73,7 @@ jobs:
   build-arm64:
     needs: prepare
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
     strategy:
       matrix:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
@@ -108,6 +111,7 @@ jobs:
   create-manifests:
     needs: [prepare, build-amd64, build-arm64]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         packaging: [pponly, nextcloud, firefox, firefox-nextcloud]
@@ -147,6 +151,7 @@ jobs:
   create-release:
     needs: [prepare, create-manifests]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

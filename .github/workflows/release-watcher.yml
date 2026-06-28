@@ -8,6 +8,7 @@ on:
 jobs:
   check-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.check.outputs.version }}
       trigger: ${{ steps.check.outputs.trigger }}
@@ -54,6 +55,7 @@ jobs:
     needs: check-release
     if: needs.check-release.outputs.trigger == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
