@@ -136,6 +136,6 @@ jobs:
           
           # Output in die GitHub Actions Zusammenfassung (Step Summary) schreiben, damit der Link sofort sichtbar ist
           "### WinGet PR Submit Result" >> $env:GITHUB_STEP_SUMMARY
-          '```text' >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
           $SubmitOutput >> $env:GITHUB_STEP_SUMMARY
           '```' >> $env:GITHUB_STEP_SUMMARY
