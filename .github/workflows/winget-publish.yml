@@ -39,12 +39,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
+          if (-not $env:GITHUB_TOKEN) {
+            Write-Error "WINGET_TOKEN/GITHUB_TOKEN is empty. Configure repository secret WINGET_TOKEN."
+            exit 1
+          }
+
           $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-setup.exe"
           
           # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
           # HINWEIS: Nullsoft Installer werden oft fälschlicherweise als x86 erkannt. 
           # Wir erzwingen hier 'x64' durch das Anhängen von '|x64' an die URL.
-          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$InstallerUrl|x64" -o .\manifests
+          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$InstallerUrl|x64" -o .\manifests -t $env:GITHUB_TOKEN
 
           # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
           $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
