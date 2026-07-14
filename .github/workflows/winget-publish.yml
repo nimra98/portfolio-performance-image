@@ -49,6 +49,7 @@ jobs:
           # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
           $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
           $EnFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*en-US.yaml" | Select-Object -First 1).FullName
+          $InstallerFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*installer.yaml" | Select-Object -First 1).FullName
 
           function Update-ReleaseNotes($Content, $Notes, $Version) {
               $Notes = $Notes.Trim()
@@ -88,6 +89,16 @@ jobs:
               Set-Content -Path $EnFile -Value $EnContent -NoNewline
           } else {
               Write-Warning "Englisch-Manifest nicht gefunden!"
+          }
+
+          # 5. Scope auf 'user' anpassen im Installer-Manifest
+          if ($InstallerFile -and (Test-Path $InstallerFile)) {
+              $InstallerContent = Get-Content $InstallerFile -Raw
+              $InstallerContent = $InstallerContent -replace 'Scope: machine', 'Scope: user'
+              Set-Content -Path $InstallerFile -Value $InstallerContent -NoNewline
+              Write-Host "Scope im Installer-Manifest auf 'user' angepasst."
+          } else {
+              Write-Warning "Installer-Manifest nicht gefunden!"
           }
           
       - name: Upload Manifests as Artifact (for Dry Run Inspection)
