@@ -36,9 +36,14 @@ jobs:
           
       - name: Update Manifests & Split Release Notes
         env:
-          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
+          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) {
+            Write-Error "WINGET_CREATE_GITHUB_TOKEN is empty. Configure repository secret WINGET_TOKEN."
+            exit 1
+          }
+
           $InstallerUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-setup.exe"
           
           # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
@@ -133,20 +138,20 @@ jobs:
       - name: Submit PR to Microsoft
         if: ${{ github.event.inputs.dry_run == 'false' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
           # Finde den Ordner, der die frisch generierten Yaml-Dateien enthält
           $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
           
           # Finale PR einreichen und Output erfassen! 
-          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $env:VERSION" $ManifestPath -t $env:GITHUB_TOKEN 2>&1
+          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $env:VERSION" $ManifestPath 2>&1
           
           # Output im Log ausgeben
           $SubmitOutput | Write-Host
           
           # Output in die GitHub Actions Zusammenfassung (Step Summary) schreiben, damit der Link sofort sichtbar ist
           "### WinGet PR Submit Result" >> $env:GITHUB_STEP_SUMMARY
-          "```text" >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
           $SubmitOutput >> $env:GITHUB_STEP_SUMMARY
-          "```" >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
