@@ -1,4 +1,4 @@
-# Docker container for Portfolio Performance
+# Portfolio Performance (Docker & WinGet Automation)
 
 The compiled Docker image can be found on DockerHub: [nimra98/portfolio-performance](https://hub.docker.com/r/nimra98/portfolio-performance)
 
@@ -43,9 +43,9 @@ You have to mount /opt/portfolio/workspace to be able to get access and/or uploa
 If you are using Nextcloud, the files from the specified remote path will be synced to /opt/portfolio/workspace/nextcloud.
 All files in /opt/portfolio/workspace/nextcloud will be synced to the remote path at container startup and every 15 minutes or when a file is modified.
 
-### Configugration
+### Configuration
 
-You have to mount /config to persist you settings.
+You have to mount /config to persist your settings.
 
 ## Environment Variables
 
@@ -139,3 +139,27 @@ services:
       # Also note that dollar signs should NOT be doubled when they not evaluated (e.g. Ansible docker_container module).
       - "traefik.http.middlewares.sec.basicauth.users=user:xxxxxxxxxxxxxxxxxxxxxx" # Replace with your own user:password hash
       - "traefik.http.services.portfolio.loadbalancer.server.port=5800" # According to the port used by the container
+
+## Automation & Releases
+
+This repository is fully automated to track the upstream [Portfolio Performance](https://github.com/portfolio-performance/portfolio) releases. 
+
+When a new version is released upstream, GitHub Actions workflows will automatically:
+1. Build and push the multi-arch (amd64/arm64) **Docker images** to Docker Hub.
+2. Generate and submit a Pull Request to Microsoft's `winget-pkgs` repository to update the **WinGet package**.
+
+You do not need to manually trigger releases or build images unless you are testing changes or maintaining the repository.
+
+## Building Locally
+
+If you want to build the Docker images locally for testing, you can use the provided `makefile` and `make.sh` scripts.
+
+For example, to build all packaging variants for a specific version:
+```bash
+./make.sh 0.68.1 build
+```
+
+To build and release (push) a specific variant:
+```bash
+make release VERSION=0.68.1 PACKAGING=pponly LATEST=true
+```
