@@ -158,26 +158,64 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Generate Release Notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          # Fetch upstream release notes
+          UPSTREAM_NOTES=$(gh release view $VERSION --repo portfolio-performance/portfolio --json body --jq '.body' || echo "*No upstream release notes found.*")
+          
+          # Fetch local generated release notes
+          LOCAL_NOTES_JSON=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="v$VERSION" \
+            -f target_commitish="${{ github.sha }}" 2>/dev/null || echo '{"body": ""}')
+            
+          LOCAL_NOTES=$(echo "$LOCAL_NOTES_JSON" | jq -r '.body // empty')
+          
+          # Replace "What's Changed" with "Changes to repo"
+          LOCAL_NOTES=$(echo "$LOCAL_NOTES" | sed "s/## What's Changed/## Changes to repo/g")
+          
+          {
+            echo "Docker images for version ${VERSION} have been successfully published to Docker Hub."
+            echo ""
+            echo "### Specific Version Images:"
+            echo "- [\`nimra98/portfolio-performance:pponly-${VERSION}\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=pponly-${VERSION})"
+            echo "- [\`nimra98/portfolio-performance:nextcloud-${VERSION}\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=nextcloud-${VERSION})"
+            echo "- [\`nimra98/portfolio-performance:firefox-${VERSION}\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-${VERSION})"
+            echo "- [\`nimra98/portfolio-performance:firefox-nextcloud-${VERSION}\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-nextcloud-${VERSION})"
+            echo ""
+            echo "### General Variants:"
+            echo "The following general tags are also available and point to the latest stable version of their respective variant:"
+            echo "- [\`nimra98/portfolio-performance:pponly\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=pponly)"
+            echo "- [\`nimra98/portfolio-performance:nextcloud\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=nextcloud)"
+            echo "- [\`nimra98/portfolio-performance:firefox\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox)"
+            echo "- [\`nimra98/portfolio-performance:firefox-nextcloud\`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-nextcloud)"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Changes in Portfolio Performance"
+            echo ""
+            echo "$UPSTREAM_NOTES"
+            echo ""
+            if [ -n "$LOCAL_NOTES" ]; then
+              echo "---"
+              echo ""
+              echo "$LOCAL_NOTES"
+            fi
+          } > release_notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           name: Release ${{ needs.prepare.outputs.version }}
-          body: |
-            Docker images for version ${{ needs.prepare.outputs.version }} have been successfully published to Docker Hub.
-            
-            ### Specific Version Images:
-            - [`nimra98/portfolio-performance:pponly-${{ needs.prepare.outputs.version }}`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=pponly-${{ needs.prepare.outputs.version }})
-            - [`nimra98/portfolio-performance:nextcloud-${{ needs.prepare.outputs.version }}`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=nextcloud-${{ needs.prepare.outputs.version }})
-            - [`nimra98/portfolio-performance:firefox-${{ needs.prepare.outputs.version }}`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-${{ needs.prepare.outputs.version }})
-            - [`nimra98/portfolio-performance:firefox-nextcloud-${{ needs.prepare.outputs.version }}`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-nextcloud-${{ needs.prepare.outputs.version }})
-            
-            ### General Variants:
-            The following general tags are also available and point to the latest stable version of their respective variant:
-            - [`nimra98/portfolio-performance:pponly`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=pponly)
-            - [`nimra98/portfolio-performance:nextcloud`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=nextcloud)
-            - [`nimra98/portfolio-performance:firefox`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox)
-            - [`nimra98/portfolio-performance:firefox-nextcloud`](https://hub.docker.com/r/nimra98/portfolio-performance/tags?name=firefox-nextcloud)
+          body_path: release_notes.md
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
