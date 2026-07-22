@@ -139,6 +139,7 @@ services:
       # Also note that dollar signs should NOT be doubled when they not evaluated (e.g. Ansible docker_container module).
       - "traefik.http.middlewares.sec.basicauth.users=user:xxxxxxxxxxxxxxxxxxxxxx" # Replace with your own user:password hash
       - "traefik.http.services.portfolio.loadbalancer.server.port=5800" # According to the port used by the container
+```
 
 ## Automation & Releases
 
