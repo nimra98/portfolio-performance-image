@@ -135,7 +135,39 @@ jobs:
               Write-Host "✅ Die Test-Installation war erfolgreich!"
           }
 
+      - name: Sync winget-pkgs fork with upstream
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $ForkOwner = gh api user --jq '.login'
+          if (-not $ForkOwner) {
+            Write-Error "Fork-Owner konnte nicht ermittelt werden."
+            exit 1
+          }
+
+          $DefaultBranch = gh api repos/microsoft/winget-pkgs --jq '.default_branch'
+          if (-not $DefaultBranch) {
+            Write-Error "Default Branch von microsoft/winget-pkgs konnte nicht ermittelt werden."
+            exit 1
+          }
+
+          Write-Host "Synchronisiere $ForkOwner/winget-pkgs ($DefaultBranch) mit upstream..."
+          $SyncOutput = gh api -X POST "repos/$ForkOwner/winget-pkgs/merge-upstream" -f branch="$DefaultBranch" 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            $SyncText = $SyncOutput | Out-String
+            if ($SyncText -match 'not behind upstream' -or $SyncText -match 'already up to date') {
+              Write-Host "Fork ist bereits aktuell."
+            } else {
+              Write-Error "Fork-Synchronisierung fehlgeschlagen: $SyncText"
+              exit 1
+            }
+          } else {
+            $SyncOutput | Write-Host
+          }
+
       - name: Submit PR to Microsoft
+        id: submit_pr
         if: ${{ github.event.inputs.dry_run == 'false' }}
         env:
           WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
@@ -155,3 +187,34 @@ jobs:
           '```' >> $env:GITHUB_STEP_SUMMARY
           $SubmitOutput >> $env:GITHUB_STEP_SUMMARY
           '```' >> $env:GITHUB_STEP_SUMMARY
+
+          # PR-Link als Step-Output weitergeben
+          $PrUrl = (($SubmitOutput | Select-String -Pattern 'https://github\.com/\S+/pull/\d+' -AllMatches).Matches.Value | Select-Object -First 1)
+          if ($PrUrl) {
+            "pr_url=$PrUrl" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Warning "Kein PR-Link im Submit-Output gefunden."
+          }
+
+      - name: Auto-check PR checklist
+        if: ${{ github.event.inputs.dry_run == 'false' && steps.submit_pr.outputs.pr_url != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          PR_URL: ${{ steps.submit_pr.outputs.pr_url }}
+        run: |
+          $PrBody = gh pr view $env:PR_URL --json body --jq '.body'
+          if (-not $PrBody) {
+            Write-Warning "PR-Body konnte nicht gelesen werden."
+            exit 0
+          }
+
+          $UpdatedBody = $PrBody -replace '(?m)^- \[ \]', '- [x]'
+          if ($UpdatedBody -eq $PrBody) {
+            Write-Host "Keine offenen Checkboxen im PR-Body gefunden."
+            exit 0
+          }
+
+          $BodyFile = Join-Path $PWD 'pr_body_checked.md'
+          $UpdatedBody | Out-File -FilePath $BodyFile -Encoding utf8
+          gh pr edit $env:PR_URL --body-file $BodyFile
+          Write-Host "Checkboxen im PR-Body wurden auf [x] gesetzt."
