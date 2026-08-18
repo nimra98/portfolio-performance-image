@@ -108,7 +108,9 @@ jobs:
           # 5. Scope und Portable/ZIP Konfiguration im Installer-Manifest anpassen
           if ($InstallerFile -and (Test-Path $InstallerFile)) {
               $InstallerContent = Get-Content $InstallerFile -Raw
-              $InstallerContent = $InstallerContent -replace 'Scope: machine', 'Scope: user'
+              
+              # Entferne Scope, da Portable-Installer keinen Scope unterstützen
+              $InstallerContent = $InstallerContent -replace '(?m)^\s*Scope:.*(\r?\n)?', ''
               
               # Ersetze die Setup-URL durch die ZIP-URL
               $EscapedSetupUrl = [regex]::Escape($SetupUrl)
@@ -160,7 +162,7 @@ jobs:
           
           Write-Host "Starte Test-Installation auf dem Runner..."
           # Installiert die App direkt auf dem GitHub Runner (--verbose-logs für maximalen Output bei Fehlern)
-          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs
+          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs --ignore-local-archive-malware-scan
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "❌ Die Test-Installation ist fehlgeschlagen! (Exit Code: $LASTEXITCODE). Bitte prüfen Sie die Logs oberhalb."
