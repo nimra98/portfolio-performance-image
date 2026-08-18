@@ -2,6 +2,8 @@
 
 The compiled Docker image can be found on DockerHub: [nimra98/portfolio-performance](https://hub.docker.com/r/nimra98/portfolio-performance)
 
+<img width="1881" height="1096" alt="grafik" src="https://github.com/user-attachments/assets/85fad603-97cd-4137-97ee-b2f5e866c6ce" />
+
 ## Summary
 
 This is a Docker container for [Portfolio Performance](https://www.portfolio-performance.info/en/).

@@ -46,8 +46,19 @@ jobs:
 
           $ZipUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-win32.win32.x86_64.zip"
           
+          # Lade die ZIP herunter und berechne den SHA256 Hash
+          Write-Host "Lade ZIP herunter für Hash-Berechnung..."
+          Invoke-WebRequest -Uri $ZipUrl -OutFile "PP.zip"
+          $ZipHash = (Get-FileHash -Path "PP.zip" -Algorithm SHA256).Hash
+          Write-Host "ZIP Hash: $ZipHash"
+          
+          # HACK: Da wingetcreate Probleme hat, eine ZIP-URL mit einem existierenden Nullsoft-Manifest zu "matchen" 
+          # (gibt "Multiple matches found" Fehler), füttern wir ihm absichtlich die alte setup.exe.
+          # So generiert wingetcreate die Manifeste fehlerfrei. Danach patchen wir die Manifeste im nächsten Schritt!
+          $SetupUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-setup.exe"
+          
           # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
-          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$ZipUrl|x64" -o .\manifests
+          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$SetupUrl|x64" -o .\manifests
 
           # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
           $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
@@ -98,6 +109,13 @@ jobs:
           if ($InstallerFile -and (Test-Path $InstallerFile)) {
               $InstallerContent = Get-Content $InstallerFile -Raw
               $InstallerContent = $InstallerContent -replace 'Scope: machine', 'Scope: user'
+              
+              # Ersetze die Setup-URL durch die ZIP-URL
+              $EscapedSetupUrl = [regex]::Escape($SetupUrl)
+              $InstallerContent = $InstallerContent -replace $EscapedSetupUrl, $ZipUrl
+              
+              # Ersetze den Hash der Setup.exe durch unseren berechneten ZIP-Hash
+              $InstallerContent = $InstallerContent -replace '(?m)^(\s*InstallerSha256:)\s*[A-Fa-f0-9]+', "`$1 $ZipHash"
               
               # Entferne ein eventuell von wingetcreate generiertes InstallerType Feld
               $InstallerContent = $InstallerContent -replace '(?m)^\s*InstallerType:.*(\r?\n)?', ''
