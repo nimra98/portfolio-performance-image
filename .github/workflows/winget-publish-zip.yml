@@ -1,0 +1,173 @@
+name: Update WinGet Package Portable (ZIP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (z.B. 0.84.2)'
+        required: true
+      dry_run:
+        description: 'Dry Run (Manifeste als Artefakt speichern, ABER KEIN PR an Microsoft senden)'
+        type: boolean
+        default: true
+
+jobs:
+  winget-pr:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Download wingetcreate
+        run: Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+      
+      - name: Fetch GitHub Release Body
+        id: get_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          # Holt die Release Notes direkt über die GitHub CLI von der Portfolio Performance Repository
+          $ReleaseBody = gh release view $env:VERSION --repo portfolio-performance/portfolio --json body --jq '.body'
+          
+          # Speichere Release Notes in einer temporären Datei um multiline-Probleme als Env-Variable zu vermeiden
+          $ReleaseBody | Out-File -FilePath release_body.txt -Encoding utf8
+          
+      - name: Update Manifests & Split Release Notes
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) {
+            Write-Error "WINGET_CREATE_GITHUB_TOKEN is empty. Configure repository secret WINGET_TOKEN."
+            exit 1
+          }
+
+          $ZipUrl = "https://github.com/portfolio-performance/portfolio/releases/download/$env:VERSION/PortfolioPerformance-$env:VERSION-win32.win32.x86_64.zip"
+          
+          # 1. Manifeste generieren, aber noch nicht einreichen (-o speichert sie im Ordner 'manifests')
+          .\wingetcreate.exe update buchen.portfolio -v $env:VERSION -u "$ZipUrl|x64" -o .\manifests
+
+          # Pfade zu den generierten Dateien finden (direkt rekursiv suchen, da der Dateiname der Version-Manifests variieren kann)
+          $DeFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*de-DE.yaml" | Select-Object -First 1).FullName
+          $EnFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*en-US.yaml" | Select-Object -First 1).FullName
+          $InstallerFile = (Get-ChildItem -Path .\manifests -Recurse -Filter "*installer.yaml" | Select-Object -First 1).FullName
+
+          function Update-ReleaseNotes($Content, $Notes, $Version) {
+              $Notes = $Notes.Trim()
+              $NotesFormatted = $Notes -replace '\r?\n', "`r`n  "
+              $Url = "https://github.com/portfolio-performance/portfolio/releases/tag/$Version"
+              
+              # Der zu injizierende Block
+              $Injection = "ReleaseNotesUrl: $Url`r`nReleaseNotes: |-`r`n  $NotesFormatted"
+              
+              # Bereinige das Feld falls es existiert, damit wir es nicht doppelt haben
+              $Content = $Content -replace '(?ms)^ReleaseNotesUrl:.*?(?=\r?\n\w+:|$)', ''
+              $Content = $Content -replace '(?ms)^ReleaseNotes:.*?(?=\r?\n\w+:|$)', ''
+              
+              # Füge es vor ManifestType ein (ManifestType steht garantiert immer ganz unten)
+              return $Content -replace '(?m)^ManifestType:', "$Injection`r`nManifestType:"
+          }
+
+          # 2. Release Body einlesen und am Trenner '---' aufteilen
+          $ReleaseBody = Get-Content release_body.txt -Raw
+          $Parts = $ReleaseBody -split '\s*---\s*'
+          $GermanNotes = $Parts[0].Trim()
+          $EnglishNotes = if ($Parts.Count -gt 1) { $Parts[1].Trim() } else { $GermanNotes }
+
+          # 3. Deutsche Release Notes in de-DE.yaml patchen
+          if ($DeFile -and (Test-Path $DeFile)) {
+              $DeContent = Get-Content $DeFile -Raw
+              $DeContent = Update-ReleaseNotes $DeContent $GermanNotes $env:VERSION
+              Set-Content -Path $DeFile -Value $DeContent -NoNewline
+          } else {
+              Write-Warning "Deutsch-Manifest nicht gefunden!"
+          }
+
+          # 4. Englische Release Notes in en-US.yaml patchen
+          if ($EnFile -and (Test-Path $EnFile)) {
+              $EnContent = Get-Content $EnFile -Raw
+              $EnContent = Update-ReleaseNotes $EnContent $EnglishNotes $env:VERSION
+              Set-Content -Path $EnFile -Value $EnContent -NoNewline
+          } else {
+              Write-Warning "Englisch-Manifest nicht gefunden!"
+          }
+
+          # 5. Scope und Portable/ZIP Konfiguration im Installer-Manifest anpassen
+          if ($InstallerFile -and (Test-Path $InstallerFile)) {
+              $InstallerContent = Get-Content $InstallerFile -Raw
+              $InstallerContent = $InstallerContent -replace 'Scope: machine', 'Scope: user'
+              
+              # Entferne ein eventuell von wingetcreate generiertes InstallerType Feld
+              $InstallerContent = $InstallerContent -replace '(?m)^\s*InstallerType:.*(\r?\n)?', ''
+              
+              # Füge Portable Installer Eigenschaften und Java 21 Dependency direkt nach dem InstallerSha256 ein
+              $PortableConfig = @(
+                  "  InstallerType: zip",
+                  "  NestedInstallerType: portable",
+                  "  NestedInstallerFiles:",
+                  "    - RelativeFilePath: PortfolioPerformance-$env:VERSION-win32.win32.x86_64\portfolio\PortfolioPerformance.exe",
+                  "      PortableCommandAlias: PortfolioPerformance",
+                  "  UpgradeBehavior: uninstallPrevious",
+                  "  Dependencies:",
+                  "    PackageDependencies:",
+                  "      - PackageIdentifier: EclipseAdoptium.Temurin.21.JRE"
+              ) -join "`r`n"
+              $InstallerContent = $InstallerContent -replace '(?m)^(\s*InstallerSha256:.*)$', "`$1`r`n$PortableConfig"
+              
+              Set-Content -Path $InstallerFile -Value $InstallerContent -NoNewline
+              Write-Host "Portable Setup (ZIP) & Java 21 Dependency ins Installer-Manifest injiziert."
+          } else {
+              Write-Warning "Installer-Manifest nicht gefunden!"
+          }
+          
+      - name: Upload Manifests as Artifact (for Dry Run Inspection)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: winget-manifests-${{ github.event.inputs.version }}
+          path: manifests/
+
+      - name: Test Local Installation
+        run: |
+          # Finde den Ordner mit den generierten Manifesten
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
+          
+          Write-Host "Aktiviere lokale Manifeste in Winget..."
+          winget settings --enable LocalManifestFiles
+          
+          Write-Host "Validiere Manifest..."
+          winget validate --manifest $ManifestPath
+          
+          Write-Host "Starte Test-Installation auf dem Runner..."
+          # Installiert die App direkt auf dem GitHub Runner (--verbose-logs für maximalen Output bei Fehlern)
+          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "❌ Die Test-Installation ist fehlgeschlagen! (Exit Code: $LASTEXITCODE). Bitte prüfen Sie die Logs oberhalb."
+              exit $LASTEXITCODE
+          } else {
+              Write-Host "✅ Die Test-Installation war erfolgreich!"
+          }
+
+      - name: Submit PR to Microsoft
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          # Finde den Ordner, der die frisch generierten Yaml-Dateien enthält
+          $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
+          
+          # Finale PR einreichen und Output erfassen! 
+          $SubmitOutput = .\wingetcreate.exe submit --prtitle "New version: buchen.portfolio version $env:VERSION" $ManifestPath 2>&1
+          
+          # Output im Log ausgeben
+          $SubmitOutput | Write-Host
+          
+          # Output in die GitHub Actions Zusammenfassung (Step Summary) schreiben, damit der Link sofort sichtbar ist
+          "### WinGet PR Submit Result" >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
+          $SubmitOutput >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
