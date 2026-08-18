@@ -154,8 +154,9 @@ jobs:
           # Finde den Ordner mit den generierten Manifesten
           $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
           
-          Write-Host "Aktiviere lokale Manifeste in Winget..."
+          Write-Host "Aktiviere lokale Manifeste und erlaube Malware-Scan-Override in Winget..."
           winget settings --enable LocalManifestFiles
+          winget settings --enable LocalArchiveMalwareScanOverride
           
           Write-Host "Validiere Manifest..."
           winget validate --manifest $ManifestPath
