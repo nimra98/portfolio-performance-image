@@ -127,7 +127,7 @@ jobs:
                   "  InstallerType: zip",
                   "  NestedInstallerType: portable",
                   "  NestedInstallerFiles:",
-                  "    - RelativeFilePath: PortfolioPerformance-$env:VERSION-win32.win32.x86_64\portfolio\PortfolioPerformance.exe",
+                  "    - RelativeFilePath: portfolio\PortfolioPerformance.exe",
                   "      PortableCommandAlias: PortfolioPerformance",
                   "  UpgradeBehavior: uninstallPrevious",
                   "  Dependencies:",
