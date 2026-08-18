@@ -154,16 +154,15 @@ jobs:
           # Finde den Ordner mit den generierten Manifesten
           $ManifestPath = (Get-ChildItem -Path .\manifests -Recurse -Filter "*.yaml" | Select-Object -First 1).Directory.FullName
           
-          Write-Host "Aktiviere lokale Manifeste und erlaube Malware-Scan-Override in Winget..."
+          Write-Host "Aktiviere lokale Manifeste in Winget..."
           winget settings --enable LocalManifestFiles
-          winget settings --enable LocalArchiveMalwareScanOverride
           
           Write-Host "Validiere Manifest..."
           winget validate --manifest $ManifestPath
           
           Write-Host "Starte Test-Installation auf dem Runner..."
           # Installiert die App direkt auf dem GitHub Runner (--verbose-logs für maximalen Output bei Fehlern)
-          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs --ignore-local-archive-malware-scan
+          winget install --manifest $ManifestPath --accept-source-agreements --accept-package-agreements --verbose-logs
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "❌ Die Test-Installation ist fehlgeschlagen! (Exit Code: $LASTEXITCODE). Bitte prüfen Sie die Logs oberhalb."
